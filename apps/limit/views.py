@@ -60,18 +60,18 @@ class ModuleAccessedView(View):
                     if user_to_module.expire_date and user_to_module.expire_date < datetime.datetime.now():
                         raise ValueError('您还不能查看此功能，\n若已登录请联系管理员开放！')
                 data = {'permission': 1}
-                error = False
+
                 message = '通过'
             except UserToModule.DoesNotExist:
                 message = '您还不能查看此功能，\n若已登录请联系管理员开放！'
                 data = {'permission': 0}
-                error = True
+
             except Exception as e:
                 message = str(e)
                 data = {'permission': 0}
-                error = True
+
             return HttpResponse(
-                content=json.dumps({"message": message, 'error': error, "data": data}),
+                content=json.dumps({"message": message, "data": data}),
                 content_type="application/json; charset=utf-8",
                 status=200
             )
@@ -89,9 +89,9 @@ class UserToClientView(View):
             body_data = json.loads(request.body)
             operate_user = User.objects.get(id=int(uid))
             # 当前用户可登录客户端
-            accessed_clients = UserToClient.objects.filter(user=operate_user)  # 第三关系表的实例
+            accessed_clients = UserToClient.objects.filter(user=operate_user, expire_date__gt=datetime.date.today())  # 第三关系表的实例
             # 所有有效的客户端
-            all_clients = Client.objects.filter(is_active=True, **body_data)
+            all_clients = Client.objects.filter(**body_data)
             # 序列化
             serializer = ClientsToUserSerializer(accessed_clients=accessed_clients, instance=all_clients, many=True)
             print(operate_user)
@@ -109,3 +109,54 @@ class UserToClientView(View):
             content_type="application/json; charset=utf-8",
             status=status_code
         )
+
+    # 修改部分信息，可登录，有效期
+    def patch(self, request, uid):
+        machine_code = request.GET.get('mc',None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_operator:
+                raise ValueError('还没登录或不能进行这项操作!')
+            # 获取可登录状态
+            body_data = json.loads(request.body)
+            client_id = body_data.get('client_id', None)
+            if not client_id:
+                raise ValueError('未指定的操作项目.')
+            # 查询记录是否存在
+            user_client = UserToClient.objects.filter(user_id=int(uid), client_id=int(client_id)).first()
+            accessed = body_data.get('accessed', None)
+            expire_date = body_data.get('expire_date', None)
+            expire_date = datetime.datetime.strptime(expire_date, '%Y-%m-%d')
+            if user_client and accessed:  # 存在，且设置为可登录,改变有效时间
+                user_client.expire_date = expire_date
+                user_client.save()
+            elif user_client and not accessed:  # 存在，且设置为不可登录,改变有效时间为2000-01-01
+                user_client.expire_date = datetime.datetime.strptime('2000-01-01', '%Y-%m-%d')
+                user_client.save()
+            elif not user_client and accessed:  # 不存在，且设置为可登录，创建数据库记录
+                user_client = UserToClient(
+                    user_id=int(uid),
+                    client_id=int(client_id)
+                )
+                user_client.save()
+            else:  # 不存在，且设置为不可登录(一般不存在这种情况), 直接忽略
+                pass
+            message = '设置成功！'
+            status_code = 200
+            data = {'expire_date': datetime.datetime.strftime(user_client.expire_date, '%Y-%m-%d')}
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = {'expire_date': ''}
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": data}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+
+

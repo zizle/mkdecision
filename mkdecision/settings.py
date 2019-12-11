@@ -1,6 +1,7 @@
 # _*_ coding:utf-8 _*_
 import os
 import sys
+import datetime
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -130,4 +131,5 @@ STATIC_URL = "/mkDecision/"
 
 # 指定用户模型
 AUTH_USER_MODEL = 'user.User'
-
+# 默认的有效期时间
+DEFAULT_EXPIRE_DATE = datetime.datetime.strptime('3000-01-01', '%Y-%m-%d')

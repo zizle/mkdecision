@@ -185,14 +185,12 @@ class UsersView(View):
             all_users = User.objects.filter(**body_data).exclude(is_superuser=True)  # 根据需求获取用户(去除超级管理员)
         serializer = UserSerializer(instance=all_users, many=True)
         return HttpResponse(
-            content=json.dumps({"message": '成功', "error": False, "data": serializer.data}),
+            content=json.dumps({"message": '获取用户列表成功!', "error": False, "data": serializer.data}),
             content_type="application/json; charset=utf-8",
             status=200
         )
 
-
-# 注册普通用户
-class UserRegisterView(View):
+    # 注册普通用户
     def post(self, request):
         machine_code = request.GET.get('mc')
         client = get_client(machine_code)
@@ -245,6 +243,7 @@ class UserRegisterView(View):
                 status=201
             )
 
+
 # 用户基础信息视图
 class UserBaseInfoView(View):
     def get(self, request, uid):
@@ -286,7 +285,7 @@ class UserBaseInfoView(View):
             new_data = json.loads(request.body)
             operate_user = User.objects.get(id=int(uid))
             for key, value in new_data.items():
-                if key in ['username', 'phone', 'email', 'note']:
+                if key in ['username', 'phone', 'email', 'note', 'is_active']:
                     operate_user.__setattr__(key, value)
             operate_user.save()
             message = '修改成功!'

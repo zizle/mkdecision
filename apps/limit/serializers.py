@@ -1,5 +1,6 @@
 # _*_ coding:utf-8 _*_
 # __Author__： zizle
+import datetime
 from rest_framework import serializers
 from basic.models import Client
 
@@ -27,11 +28,11 @@ class ClientsToUserSerializer(serializers.ModelSerializer):
             return 0
 
     def get_expire_date(self, obj):
+        expire_date = ''
         for user_to_client in self.accessed_clients:
             if user_to_client.client.id == obj.id:
-                return str(user_to_client.expire_date) if user_to_client.expire_date else '长期'
-            else:
-                return ''
+                expire_date = datetime.datetime.strftime(user_to_client.expire_date, '%Y-%m-%d')
+        return expire_date
 
     @staticmethod
     def get_name(obj):
