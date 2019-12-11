@@ -29,7 +29,13 @@ class ClientSerializer(serializers.ModelSerializer):
 
 # 主模块序列化器
 class ModuleSerializer(serializers.ModelSerializer):
+    is_active = serializers.SerializerMethodField()
+
     class Meta:
         model = Module
         fields = ('id', 'name', 'is_active')
+
+    @staticmethod
+    def get_is_active(obj):
+        return 1 if obj.is_active else 0
 

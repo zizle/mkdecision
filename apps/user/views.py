@@ -156,7 +156,7 @@ class UserKeepOnline(View):
             data = serializer.data
             data['Authorization'] = request.META.get('HTTP_AUTHORIZATION', '')
             # 获取系统模块
-            module_serializer = ModuleSerializer(instance=Module.objects.all(), many=True)
+            module_serializer = ModuleSerializer(instance=Module.objects.filter(is_active=True), many=True)
             data['modules'] = module_serializer.data  # 系统默认模块
             data['actions'] = get_actions_with_user(user, client)  # 获取管理员可操作的模块
             return HttpResponse(
@@ -234,7 +234,7 @@ class UsersView(View):
             data = serializer.data
             data['Authorization'] = generate_jwt(user)  # token
             # 获取系统模块
-            module_serializer = ModuleSerializer(instance=Module.objects.all(), many=True)
+            module_serializer = ModuleSerializer(instance=Module.objects.filter(is_active=True), many=True)
             data['modules'] = module_serializer.data  # 系统默认模块
             data['actions'] = get_actions_with_user(user, client)  # 获取管理员可操作的模块
             return HttpResponse(
