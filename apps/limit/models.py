@@ -1,6 +1,7 @@
 # _*_ coding:utf-8 _*_
 # __Author__： zizle
 from django.db import models
+from django.conf import settings
 from apps.abstract import BaseModel
 
 
@@ -8,7 +9,7 @@ from apps.abstract import BaseModel
 class UserToClient(BaseModel):
     user = models.ForeignKey(to='user.User', on_delete=models.CASCADE, verbose_name="用户")
     client = models.ForeignKey(to='basic.Client', on_delete=models.CASCADE, verbose_name="客户端")
-    expire_date = models.DateTimeField(null=True, blank=True, verbose_name="失效时间")
+    expire_date = models.DateField(default=settings.DEFAULT_EXPIRE_DATE, verbose_name="失效时间")
 
     class Meta:
         db_table = "limit_user_client"
@@ -21,7 +22,7 @@ class UserToClient(BaseModel):
 class UserToModule(BaseModel):
     user = models.ForeignKey(to='user.User', on_delete=models.CASCADE, verbose_name="用户")
     module = models.ForeignKey(to='basic.Module', on_delete=models.CASCADE, verbose_name="模块")
-    expire_date = models.DateTimeField(null=True, blank=True, verbose_name="失效时间")
+    expire_date = models.DateField(default=settings.DEFAULT_EXPIRE_DATE, verbose_name="失效时间")
 
     class Meta:
         db_table = "limit_user_module"

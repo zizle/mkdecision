@@ -14,7 +14,7 @@ def user_entered(user, client):
     except UserToClient.DoesNotExist:
         return False
     # 如果存在则验证有效时间
-    if user_to_client.expire_date and user_to_client.expire_date < datetime.datetime.now():
+    if user_to_client.expire_date and user_to_client.expire_date < datetime.date.today():
         return False
     else:
         return True

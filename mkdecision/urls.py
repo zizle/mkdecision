@@ -18,6 +18,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('user/', include('user.urls')),
-    path('basic/', include('basic.urls')),
+    path('', include('basic.urls')),
     path('limit/', include('limit.urls'))
 ]

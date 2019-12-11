@@ -156,7 +156,7 @@ class UserKeepOnline(View):
             data = serializer.data
             data['Authorization'] = request.META.get('HTTP_AUTHORIZATION', '')
             # 获取系统模块
-            module_serializer = ModuleSerializer(instance=Module.objects.all(), many=True)
+            module_serializer = ModuleSerializer(instance=Module.objects.filter(is_active=True), many=True)
             data['modules'] = module_serializer.data  # 系统默认模块
             data['actions'] = get_actions_with_user(user, client)  # 获取管理员可操作的模块
             return HttpResponse(
@@ -185,14 +185,12 @@ class UsersView(View):
             all_users = User.objects.filter(**body_data).exclude(is_superuser=True)  # 根据需求获取用户(去除超级管理员)
         serializer = UserSerializer(instance=all_users, many=True)
         return HttpResponse(
-            content=json.dumps({"message": '成功', "error": False, "data": serializer.data}),
+            content=json.dumps({"message": '获取用户列表成功!', "error": False, "data": serializer.data}),
             content_type="application/json; charset=utf-8",
             status=200
         )
 
-
-# 注册普通用户
-class UserRegisterView(View):
+    # 注册普通用户
     def post(self, request):
         machine_code = request.GET.get('mc')
         client = get_client(machine_code)
@@ -236,7 +234,7 @@ class UserRegisterView(View):
             data = serializer.data
             data['Authorization'] = generate_jwt(user)  # token
             # 获取系统模块
-            module_serializer = ModuleSerializer(instance=Module.objects.all(), many=True)
+            module_serializer = ModuleSerializer(instance=Module.objects.filter(is_active=True), many=True)
             data['modules'] = module_serializer.data  # 系统默认模块
             data['actions'] = get_actions_with_user(user, client)  # 获取管理员可操作的模块
             return HttpResponse(
@@ -244,6 +242,7 @@ class UserRegisterView(View):
                 content_type="application/json; charset=utf-8",
                 status=201
             )
+
 
 # 用户基础信息视图
 class UserBaseInfoView(View):
@@ -286,7 +285,7 @@ class UserBaseInfoView(View):
             new_data = json.loads(request.body)
             operate_user = User.objects.get(id=int(uid))
             for key, value in new_data.items():
-                if key in ['username', 'phone', 'email', 'note']:
+                if key in ['username', 'phone', 'email', 'note', 'is_active']:
                     operate_user.__setattr__(key, value)
             operate_user.save()
             message = '修改成功!'
