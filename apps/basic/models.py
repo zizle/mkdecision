@@ -3,6 +3,8 @@
 from django.db import models
 from apps.abstract import BaseModel
 
+""" 客户端相关 """
+
 
 # 客户端模型
 class Client(BaseModel):
@@ -17,6 +19,9 @@ class Client(BaseModel):
         verbose_name_plural = verbose_name
 
 
+""" 系统主功能模块相关 """
+
+
 # 系统主功能模块
 class Module(BaseModel):
     name = models.CharField(max_length=16, unique=True, verbose_name="名称")
@@ -27,3 +32,29 @@ class Module(BaseModel):
         db_table = "basic_module"
         verbose_name = "主功能菜单"
         verbose_name_plural = verbose_name
+
+
+""" 品种相关 """
+
+
+# 品种的分组
+class VarietyGroup(BaseModel):
+    name = models.CharField(max_length=16, unique=True, verbose_name="组名")
+
+    class Meta:
+        db_table = 'basic_variety_group'
+        verbose_name = "品种组别"
+        verbose_name_plural = verbose_name
+
+
+# 品种模型
+class Variety(BaseModel):
+    group = models.ForeignKey('VarietyGroup', related_name='varieties', on_delete=models.CASCADE, verbose_name='所属组')
+    name = models.CharField(max_length=16, verbose_name='名称')
+    name_en = models.CharField(max_length=32, verbose_name='名称')
+
+    class Meta:
+        db_table = 'basic_variety'
+        verbose_name = '品种'
+        verbose_name_plural = verbose_name
+        unique_together = (('group', 'name'), ('group', 'name_en'),)

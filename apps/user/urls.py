@@ -3,7 +3,7 @@
 
 from django.urls import path, re_path
 from . import views
-from limit.views import UserToClientView
+from limit.views import UserToClientView, UserToModuleView, UserToVarietyView
 
 urlpatterns = [
     path(r'superuser/', views.SuperUserView.as_view()),  # 超级管理员视图
@@ -12,5 +12,7 @@ urlpatterns = [
     path(r'', views.UsersView.as_view()),  # 用户视图(根据过滤条件获取相应用户)、普通用户注册
     re_path(r'^(?P<uid>\d+)/baseInfo/$', views.UserBaseInfoView.as_view()),  # 用户基础信息视图
     re_path(r'^(?P<uid>\d+)/clients/$', UserToClientView.as_view()),  # 用户客户端权限视图(维护用户客户端权限)
+    re_path(r'^(?P<uid>\d+)/modules/$', UserToModuleView.as_view()),  # 用户模块权限视图(维护用户模块权限)
+    re_path(r'^(?P<uid>\d+)/varieties/$', UserToVarietyView.as_view()),  # 用户品种权限视图(维护用户模块权限)
 
 ]

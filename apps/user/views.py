@@ -109,9 +109,6 @@ class UserLoginView(View):
             serializer = UserSerializer(instance=user)
             data = serializer.data
             data['Authorization'] = generate_jwt(user)  # token
-            # 获取系统模块
-            module_serializer = ModuleSerializer(instance=Module.objects.filter(is_active=True), many=True)
-            data['modules'] = module_serializer.data  # 系统默认模块
             data['actions'] = get_actions_with_user(user, client)  # 获取管理员可操作的模块
             message = '登录成功'
             error = False
@@ -155,9 +152,6 @@ class UserKeepOnline(View):
             serializer = UserSerializer(instance=user)
             data = serializer.data
             data['Authorization'] = request.META.get('HTTP_AUTHORIZATION', '')
-            # 获取系统模块
-            module_serializer = ModuleSerializer(instance=Module.objects.filter(is_active=True), many=True)
-            data['modules'] = module_serializer.data  # 系统默认模块
             data['actions'] = get_actions_with_user(user, client)  # 获取管理员可操作的模块
             return HttpResponse(
                 content=json.dumps({"message": '自动登录成功', 'error': False, "data": data}),
@@ -233,9 +227,6 @@ class UsersView(View):
             serializer = UserSerializer(instance=user)
             data = serializer.data
             data['Authorization'] = generate_jwt(user)  # token
-            # 获取系统模块
-            module_serializer = ModuleSerializer(instance=Module.objects.filter(is_active=True), many=True)
-            data['modules'] = module_serializer.data  # 系统默认模块
             data['actions'] = get_actions_with_user(user, client)  # 获取管理员可操作的模块
             return HttpResponse(
                 content=json.dumps({"message": '注册成功.', "data": data}),

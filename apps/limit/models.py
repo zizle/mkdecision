@@ -29,3 +29,16 @@ class UserToModule(BaseModel):
         verbose_name = '用户-模块'
         verbose_name_plural = verbose_name
         unique_together = (('user', 'module'),)
+
+
+# 用户拥有权限的品种关系表
+class UserToVariety(BaseModel):
+    user = models.ForeignKey(to='user.User', on_delete=models.CASCADE, verbose_name="用户")
+    variety = models.ForeignKey(to='basic.Variety', on_delete=models.CASCADE, verbose_name="品种")
+    expire_date = models.DateField(default=settings.DEFAULT_EXPIRE_DATE, verbose_name="失效时间")
+
+    class Meta:
+        db_table = "limit_user_variety"
+        verbose_name = '用户-品种'
+        verbose_name_plural = verbose_name
+        unique_together = (('user', 'variety'),)
