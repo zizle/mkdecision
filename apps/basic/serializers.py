@@ -1,7 +1,7 @@
 # _*_ coding:utf-8 _*_
 # __Author__： zizle
 from rest_framework import serializers
-from .models import Client, Module
+from .models import Client, Module, VarietyGroup, Variety
 
 
 # 客户端序列化器
@@ -38,4 +38,25 @@ class ModuleSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_is_active(obj):
         return 1 if obj.is_active else 0
+
+
+""" 品种相关 """
+
+
+# 品种序列化器
+class VarietySerializer(serializers.ModelSerializer):
+    group = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+    class Meta:
+        model = Variety
+        fields = ('id', 'name', 'name_en', 'group')
+
+
+# 品种组序列化器
+class VarietyGroupSerializer(serializers.ModelSerializer):
+    varieties = VarietySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = VarietyGroup
+        fields = ('id', 'name', 'varieties')
 
