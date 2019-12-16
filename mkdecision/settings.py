@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'user.apps.UserConfig',  # 用户
     'basic.apps.BasicConfig',  # 基础信息
     'limit.apps.LimitConfig',  # 权限管理
+    'home.apps.HomeConfig',  # 首页
 ]
 """
 中间件功能介绍
@@ -125,9 +126,9 @@ MEDIA_ROOT = 'E:/mkDecision/'
 
 # 静态文件
 STATIC_URL = "/mkDecision/"
-# STATICFILES_DIRS = [
-#     "E:/mkDecision/"
-# ]
+STATICFILES_DIRS = [
+    "E:/mkDecision/"
+]
 
 # 指定用户模型
 AUTH_USER_MODEL = 'user.User'
