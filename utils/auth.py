@@ -9,6 +9,8 @@ from limit.models import UserToClient
 
 # 用户可否进入客户端
 def user_entered(user, client):
+    if user.is_superuser:
+        return True
     try:
         user_to_client = UserToClient.objects.get(user=user, client=client)
     except UserToClient.DoesNotExist:
