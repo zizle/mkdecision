@@ -1,7 +1,7 @@
 # _*_ coding:utf-8 _*_
 # __Author__： zizle
 from django.forms import ModelForm, ModelChoiceField
-from .models import NewsBulletin, Advertisement
+from .models import NewsBulletin, Advertisement, NormalReport
 from user.models import User
 
 
@@ -20,4 +20,11 @@ class AdvertisementForm(ModelForm):
 
     class Meta:
         model = Advertisement
+        fields = '__all__'
+
+
+# 上传常规报告的Form
+class NormalReportForm(ModelForm):
+    class Meta:
+        model = NormalReport
         fields = '__all__'
