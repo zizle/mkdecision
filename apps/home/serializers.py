@@ -34,6 +34,8 @@ class AdvertisementSerializer(serializers.ModelSerializer):
 
 # 数据分组序列化器
 class DataCategorySerializer(serializers.ModelSerializer):
+    group = serializers.ChoiceField(choices=DataCategory.GROUPS, source="get_group_display",
+                                    read_only=True)  # 设置source="get_属性_display"即可
     class Meta:
         model = DataCategory
         fields = ('id', 'name', 'group')

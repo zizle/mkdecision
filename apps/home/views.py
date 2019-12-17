@@ -260,10 +260,15 @@ class DataCategoryView(View):
     def get(self, request, group):
         machine_code = request.GET.get('mc')
         client = get_client(machine_code)
-        if not client or group not in [couple[0] for couple in DataCategory.GROUPS]:
+        if not client or group not in [couple[0] for couple in DataCategory.GROUPS] + ['all']:
             categories = DataCategory.objects.none()
         else:
-            categories = DataCategory.objects.filter(group=group)
+            categories = DataCategory.objects.all()
+            if group != 'all':
+                categories = categories.filter(group=group)
+            else:
+                categories.query.group_by = ['group']
+                print(categories)
         serializer = DataCategorySerializer(instance=categories, many=True)
         return HttpResponse(
             content=json.dumps({"message": '获取分类成功!', "data": serializer.data}),
@@ -284,10 +289,9 @@ class DataCategoryView(View):
             if not request_user or not request_user.is_operator:
                 raise ValueError('登录已过期或您还不能进行这个操作!')
             body_data = json.loads(request.body)
-            name = body_data.get('name',None)
+            name = body_data.get('name', None)
             if not name:
                 raise ValueError('请输入正确的分组名称!')
-
             # 创建分组
             category = DataCategory(
                 name=name,
