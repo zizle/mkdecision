@@ -30,3 +30,38 @@ class Advertisement(BaseModel):
         verbose_name = '首页广告'
         verbose_name_plural = verbose_name
 
+
+# 常规报告、交易通知等数据菜单分类模型
+class DataCategory(BaseModel):
+    GROUPS = (
+        ('normal_report', '常规报告'),
+        ('transaction_notice', '交易通知'),
+    )
+    name = models.CharField(max_length=16, verbose_name='名称')
+    group = models.CharField(max_length=32, choices=GROUPS, verbose_name='组别')
+
+    class Meta:
+        db_table = 'home_data_category'
+        verbose_name = '分类'
+        verbose_name_plural = verbose_name
+        unique_together = (('name', 'group'),)
+
+
+# 常规报告模型
+class NormalReport(BaseModel):
+    name = models.CharField(max_length=256, verbose_name='文件名')
+    file = models.FileField(upload_to='home/normalReport/%Y/%m/%d/')
+    date = models.DateField(verbose_name='报告日期')
+    uploader = models.ForeignKey('user.User', related_name='report_files', null=True, on_delete=models.SET_NULL,
+                                 verbose_name='上传者')
+    category = models.ForeignKey('DataCategory', related_name='normal_reports', null=True, on_delete=models.CASCADE,
+                                 verbose_name='所属分类')
+    varieties = models.ManyToManyField('basic.Variety', related_name='variety_reports', verbose_name='所属品种')
+
+    class Meta:
+        db_table = 'home_normal_report'
+        verbose_name = '常规报告'
+        verbose_name_plural = verbose_name
+        unique_together = (('name', 'date'),)
+
+

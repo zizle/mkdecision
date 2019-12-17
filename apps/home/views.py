@@ -2,12 +2,13 @@
 # __Author__： zizle
 import json
 import os
+import datetime
 from django.conf import settings
 from django.views.generic import View
 from django.http.response import HttpResponse
-from .forms import NewsBulletinForm, AdvertisementForm
-from .models import NewsBulletin, Advertisement
-from .serializers import NewsBulletinSerializer, AdvertisementSerializer
+from .forms import NewsBulletinForm, AdvertisementForm, NormalReportForm
+from .models import NewsBulletin, Advertisement, DataCategory, NormalReport
+from .serializers import NewsBulletinSerializer, AdvertisementSerializer, DataCategorySerializer, NormalReportSerializer
 from utils.client import get_client
 
 
@@ -249,6 +250,177 @@ class AdvertiseWithNameView(View):
             data = {}
         return HttpResponse(
             content=json.dumps({"message": message, "data": data}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 数据分类视图
+class DataCategoryView(View):
+    def get(self, request, group):
+        machine_code = request.GET.get('mc')
+        client = get_client(machine_code)
+        if not client or group not in [couple[0] for couple in DataCategory.GROUPS]:
+            categories = DataCategory.objects.none()
+        else:
+            categories = DataCategory.objects.filter(group=group)
+        serializer = DataCategorySerializer(instance=categories, many=True)
+        return HttpResponse(
+            content=json.dumps({"message": '获取分类成功!', "data": serializer.data}),
+            content_type="application/json; charset=utf-8",
+            status=200
+        )
+
+    def post(self, request, group):
+        machine_code = request.GET.get('mc')
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            # 验证group
+            if group not in [couple[0] for couple in DataCategory.GROUPS]:
+                raise ValueError('错误的请求.')
+            if not request_user or not request_user.is_operator:
+                raise ValueError('登录已过期或您还不能进行这个操作!')
+            body_data = json.loads(request.body)
+            name = body_data.get('name',None)
+            if not name:
+                raise ValueError('请输入正确的分组名称!')
+
+            # 创建分组
+            category = DataCategory(
+                name=name,
+                group=group
+            )
+            category.save()
+            message = '创建分类成功!'
+            status_code = 201
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": {}}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 常规报告视图
+class NormalReportView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc')
+        client = get_client(machine_code)
+        try:
+            if not client:
+                raise ValueError('INVALID CLIENT!')
+            body_data = json.loads(request.body)
+            category = int(body_data.get('category'))
+            params = dict()
+            if category == 0:
+                pass
+            elif category == -1:
+                params['category'] = None
+            else:
+                params['category_id'] = category
+            # 查询
+            variety = int(body_data.get('variety'))
+            if variety != 0:
+                reports = list()
+                for report in NormalReport.objects.filter(**params):
+                    related_vids = [v.id for v in report.varieties.all()]
+                    if variety in related_vids:
+                        reports.append(report)
+            else:
+                reports = NormalReport.objects.filter(**params)
+            serializer = NormalReportSerializer(instance=reports, many=True)
+            message = '获取常规报告成功！'
+            status_code = 200
+            data = serializer.data
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = []
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': data}),
+            content_type='application/json; charset=utf-8',
+            status=status_code
+        )
+
+    def post(self, request):
+        # 重新过滤组织数据
+        machine_code = request.GET.get('mc', '')
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT.')
+            if not request_user or not request_user.is_researcher:
+                raise ValueError('未登录或不能进行这个操作!')
+            file_name = request.POST.get('name', '')
+            if not file_name:
+                file_name = request.FILES.name
+            date = request.POST.get('date', '')
+            if not date:
+                raise ValueError('该报告没有设置日期')
+            date = datetime.datetime.strptime(date, '%Y-%m-%d')
+            cid = int(request.POST.get('category_id', 0))  # 数据分类
+            # 关联品种的id列表
+            related_vids = eval(request.POST.get('variety_ids', 0))
+            if not related_vids:
+                raise ValueError('请选择所属品种!')
+            # variety_instance = Variety.objects.get(id=vid)
+            # if not user_accessed_variety(user, variety_instance):  # 验证用户品种权限
+            #     raise ValueError('您还没这个品种权限.')
+            # 组织好数据
+            data_to_save = {
+                'name': file_name,
+                'date': date,
+                'uploader': request_user.id,
+                'category': cid if cid else None,
+                'varieties': related_vids
+            }
+            form = NormalReportForm(data_to_save, request.FILES)
+            if form.is_valid():
+                form.save()
+                message = '上传成功!'
+                status_code = 201
+            else:
+                raise ValueError(form.errors)
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': {}}),
+            content_type='application/json; charset=utf-8',
+            status=status_code
+        )
+
+
+# 单个常规报告视图
+class NormalReportRetrieveView(View):
+    def delete(self, request, rid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_operator:
+                raise ValueError('还没登录或不能进行这项操作!')
+            report = NormalReport.objects.get(id=int(rid))
+            # 删除文件
+            file_path = settings.MEDIA_ROOT + report.file.name
+            os.remove(file_path)
+            report.delete()
+            status_code = 200
+            message = '删除报告成功!'
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": {}}),
             content_type="application/json; charset=utf-8",
             status=status_code
         )
