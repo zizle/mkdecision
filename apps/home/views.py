@@ -7,9 +7,9 @@ from django.conf import settings
 from django.views.generic import View
 from django.http.response import HttpResponse
 from .forms import NewsBulletinForm, AdvertisementForm, NormalReportForm, TransactionNoticeForm
-from .models import NewsBulletin, Advertisement, DataCategory, NormalReport, TransactionNotice, SpotCommodity
+from .models import NewsBulletin, Advertisement, DataCategory, NormalReport, TransactionNotice, SpotCommodity, FinanceCalendar
 from .serializers import NewsBulletinSerializer, AdvertisementSerializer, DataCategorySerializer, NormalReportSerializer,\
-    TransactionNoticeSerializer, SpotCommoditySerializer
+    TransactionNoticeSerializer, SpotCommoditySerializer, FinanceCalendarSerializer
 from utils.client import get_client
 
 
@@ -269,7 +269,6 @@ class DataCategoryView(View):
                 categories = categories.filter(group=group)
             else:
                 categories.query.group_by = ['group']
-                print(categories)
         serializer = DataCategorySerializer(instance=categories, many=True)
         return HttpResponse(
             content=json.dumps({"message": '获取分类成功!', "data": serializer.data}),
@@ -599,6 +598,82 @@ class SpotCommodityRetrieveView(View):
             spot_commodity.delete()
             status_code = 200
             message = '删除记录成功!'
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": {}}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 财经日历视图
+class FinanceCalendarView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        date = request.GET.get('date', None)
+        client = get_client(machine_code)
+        if not all([client, date]):
+            finance_objs = FinanceCalendar.objects.none()
+        else:
+            finance_objs = FinanceCalendar.objects.filter(date=date).order_by('date','time')
+        serializer = FinanceCalendarSerializer(instance=finance_objs, many=True)
+
+        return HttpResponse(
+            content=json.dumps({"message": '获取财经日历成功!', "data": serializer.data}),
+            content_type="application/json; charset=utf-8",
+            status=200
+        )
+
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('未登录或不能进行这项操作！')
+            body_data = json.loads(request.body)
+            finance_list = body_data.get('finance_list', None)
+            if not finance_list:
+                raise ValueError('还没有上传任何数据.')
+            instance_list = list()
+            for item in finance_list:
+                item['date'] = datetime.datetime.strptime(item['date'], '%Y-%m-%d')
+                item['time'] = datetime.datetime.strptime(item['time'], '%H:%M:%S')
+                item['uploader_id'] = request_user.id  # 加入上传者
+                instance = FinanceCalendar(**item)
+                instance_list.append(instance)
+            FinanceCalendar.objects.bulk_create(instance_list)
+            message = "上传成功!"
+            status_code = 201
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": []}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 单条财经日历视图
+class FinanceCalendarRetrieveView(View):
+    def delete(self, request, fid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_operator:
+                raise ValueError('还没登录或不能进行这项操作!')
+            finance_calendar = FinanceCalendar.objects.get(id=int(fid))
+            finance_calendar.delete()
+            status_code = 200
+            message = '删除日历事件成功!'
         except Exception as e:
             message = str(e)
             status_code = 400

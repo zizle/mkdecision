@@ -1,7 +1,7 @@
 # _*_ coding:utf-8 _*_
 # __Author__： zizle
 from rest_framework import serializers
-from .models import NewsBulletin, Advertisement, DataCategory, NormalReport, TransactionNotice, SpotCommodity
+from .models import NewsBulletin, Advertisement, DataCategory, NormalReport, TransactionNotice, SpotCommodity, FinanceCalendar
 
 
 # 新闻公告序列化器
@@ -98,7 +98,27 @@ class SpotCommoditySerializer(serializers.ModelSerializer):
     uploader = serializers.SerializerMethodField()
 
     class Meta:
-        model = SpotCommodity()
+        model = SpotCommodity
+        exclude = ('create_time', 'update_time',)
+
+    @staticmethod
+    def get_uploader(obj):
+        text = ''
+        if obj.uploader:
+            if obj.uploader.note:
+                text = obj.uploader.note
+            else:
+                text = obj.uploader.phone[:3] + '****' + obj.uploader.phone[7:]
+        return text
+
+
+# 财经日历序列化器
+class FinanceCalendarSerializer(serializers.ModelSerializer):
+    time = serializers.TimeField(format('%H:%M'), read_only=True)
+    uploader = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FinanceCalendar
         exclude = ('create_time', 'update_time',)
 
     @staticmethod

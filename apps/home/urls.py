@@ -17,5 +17,7 @@ urlpatterns = [
     path(r'transaction_notice/', views.TransactionNoticeView.as_view()),  # 交易通知视图
     re_path(r'^transaction_notice/(?P<nid>\d+)/$', views.TransactionNoticeRetrieveView.as_view()),  # 单个交易通知视图
     path(r'spot-commodity/', views.SpotCommodityView.as_view()),  # 现货报表视图
-    re_path(r'spot-commodity/(?P<sid>\d+)/$', views.SpotCommodityRetrieveView.as_view()),  # 单条现货报表记录视图
+    re_path(r'^spot-commodity/(?P<sid>\d+)/$', views.SpotCommodityRetrieveView.as_view()),  # 单条现货报表记录视图
+    path(r'finance-calendar/', views.FinanceCalendarView.as_view()),  # 财经日历视图
+    re_path(r'^finance-calendar/(?P<fid>\d+)/$', views.FinanceCalendarRetrieveView.as_view()),  # 财经日历视图
 ]

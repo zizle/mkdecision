@@ -98,3 +98,18 @@ class SpotCommodity(BaseModel):
         unique_together = ('name', 'date')
         verbose_name = "现货报表"
 
+
+# 财经日历模型
+class FinanceCalendar(BaseModel):
+    date = models.DateField(verbose_name="日期")
+    time = models.TimeField(verbose_name="时间")
+    country = models.CharField(max_length=128, verbose_name="地区")
+    event = models.TextField(verbose_name="事件")
+    expected = models.CharField(max_length=64, verbose_name="预期值")
+    uploader = models.ForeignKey('user.User', null=True, blank=True, on_delete=models.SET_NULL, verbose_name='上传者')
+
+    class Meta:
+        db_table = "home_finance_calendar"
+        unique_together = ('date', 'country', 'event')
+        verbose_name = "财经日历"
+
