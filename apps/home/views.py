@@ -6,9 +6,10 @@ import datetime
 from django.conf import settings
 from django.views.generic import View
 from django.http.response import HttpResponse
-from .forms import NewsBulletinForm, AdvertisementForm, NormalReportForm
-from .models import NewsBulletin, Advertisement, DataCategory, NormalReport
-from .serializers import NewsBulletinSerializer, AdvertisementSerializer, DataCategorySerializer, NormalReportSerializer
+from .forms import NewsBulletinForm, AdvertisementForm, NormalReportForm, TransactionNoticeForm
+from .models import NewsBulletin, Advertisement, DataCategory, NormalReport, TransactionNotice, SpotCommodity, FinanceCalendar
+from .serializers import NewsBulletinSerializer, AdvertisementSerializer, DataCategorySerializer, NormalReportSerializer,\
+    TransactionNoticeSerializer, SpotCommoditySerializer, FinanceCalendarSerializer
 from utils.client import get_client
 
 
@@ -268,7 +269,6 @@ class DataCategoryView(View):
                 categories = categories.filter(group=group)
             else:
                 categories.query.group_by = ['group']
-                print(categories)
         serializer = DataCategorySerializer(instance=categories, many=True)
         return HttpResponse(
             content=json.dumps({"message": '获取分类成功!', "data": serializer.data}),
@@ -428,6 +428,263 @@ class NormalReportRetrieveView(View):
             content_type="application/json; charset=utf-8",
             status=status_code
         )
+
+
+# 交易通知视图
+class TransactionNoticeView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc')
+        client = get_client(machine_code)
+        try:
+            if not client:
+                raise ValueError('INVALID CLIENT!')
+            body_data = json.loads(request.body)
+            category = int(body_data.get('category_id'))
+            params = dict()
+            if category == 0:
+                pass
+            elif category == -1:
+                params['category'] = None
+            else:
+                params['category_id'] = category
+            # 查询
+            notices = TransactionNotice.objects.filter(**params)
+            serializer = TransactionNoticeSerializer(instance=notices, many=True)
+            message = '获取交易通知成功!'
+            status_code = 200
+            data = serializer.data
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = []
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': data}),
+            content_type='application/json; charset=utf-8',
+            status=status_code
+        )
+
+    def post(self, request):
+        # 重新过滤组织数据
+        machine_code = request.GET.get('mc', '')
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT.')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('未登录或不能进行这个操作!')
+            file_name = request.POST.get('name', '')
+            if not file_name:
+                file_name = request.FILES.name
+            date = request.POST.get('date', '')
+            if not date:
+                raise ValueError('该通知没有设置日期')
+            date = datetime.datetime.strptime(date, '%Y-%m-%d')
+            cid = int(request.POST.get('category_id', 0))  # 数据分类
+            # 组织好数据
+            data_to_save = {
+                'name': file_name,
+                'date': date,
+                'uploader': request_user.id,
+                'category': cid if cid else None,
+            }
+            form = TransactionNoticeForm(data_to_save, request.FILES)
+            if form.is_valid():
+                form.save()
+                message = '上传成功!'
+                status_code = 201
+            else:
+                raise ValueError(form.errors)
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': {}}),
+            content_type='application/json; charset=utf-8',
+            status=status_code
+        )
+
+
+# 单个交易通知视图
+class TransactionNoticeRetrieveView(View):
+    def delete(self, request, nid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_operator:
+                raise ValueError('还没登录或不能进行这项操作!')
+            notice = TransactionNotice.objects.get(id=int(nid))
+            # 删除文件
+            file_path = settings.MEDIA_ROOT + notice.file.name
+            os.remove(file_path)
+            notice.delete()
+            status_code = 200
+            message = '删除通知成功!'
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": {}}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 现货报表视图
+class SpotCommodityView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        date = request.GET.get('date', None)
+        client = get_client(machine_code)
+        if not all([client, date]):
+            spot_objs = SpotCommodity.objects.none()
+        else:
+            spot_objs = SpotCommodity.objects.filter(date=date)
+        serializer = SpotCommoditySerializer(instance=spot_objs, many=True)
+
+        return HttpResponse(
+            content=json.dumps({"message": '获取现货报表成功!', "data": serializer.data}),
+            content_type="application/json; charset=utf-8",
+            status=200
+        )
+
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('未登录或不能进行这项操作！')
+            body_data = json.loads(request.body)
+            commodity_list = body_data.get('commodity_list', None)
+            if not commodity_list:
+                raise ValueError('还没有上传任何数据.')
+            instance_list = list()
+            for item in commodity_list:
+                item['date'] = datetime.datetime.strptime(item['date'], '%Y-%m-%d')
+                item['uploader_id'] = request_user.id  # 加入上传者
+                instance = SpotCommodity(**item)
+                instance_list.append(instance)
+            SpotCommodity.objects.bulk_create(instance_list)
+            message = "上传成功!"
+            status_code = 201
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": []}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 单条报表记录视图
+class SpotCommodityRetrieveView(View):
+    def delete(self, request, sid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_operator:
+                raise ValueError('还没登录或不能进行这项操作!')
+            spot_commodity = SpotCommodity.objects.get(id=int(sid))
+            spot_commodity.delete()
+            status_code = 200
+            message = '删除记录成功!'
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": {}}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 财经日历视图
+class FinanceCalendarView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        date = request.GET.get('date', None)
+        client = get_client(machine_code)
+        if not all([client, date]):
+            finance_objs = FinanceCalendar.objects.none()
+        else:
+            finance_objs = FinanceCalendar.objects.filter(date=date).order_by('date','time')
+        serializer = FinanceCalendarSerializer(instance=finance_objs, many=True)
+
+        return HttpResponse(
+            content=json.dumps({"message": '获取财经日历成功!', "data": serializer.data}),
+            content_type="application/json; charset=utf-8",
+            status=200
+        )
+
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('未登录或不能进行这项操作！')
+            body_data = json.loads(request.body)
+            finance_list = body_data.get('finance_list', None)
+            if not finance_list:
+                raise ValueError('还没有上传任何数据.')
+            instance_list = list()
+            for item in finance_list:
+                item['date'] = datetime.datetime.strptime(item['date'], '%Y-%m-%d')
+                item['time'] = datetime.datetime.strptime(item['time'], '%H:%M:%S')
+                item['uploader_id'] = request_user.id  # 加入上传者
+                instance = FinanceCalendar(**item)
+                instance_list.append(instance)
+            FinanceCalendar.objects.bulk_create(instance_list)
+            message = "上传成功!"
+            status_code = 201
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": []}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 单条财经日历视图
+class FinanceCalendarRetrieveView(View):
+    def delete(self, request, fid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_operator:
+                raise ValueError('还没登录或不能进行这项操作!')
+            finance_calendar = FinanceCalendar.objects.get(id=int(fid))
+            finance_calendar.delete()
+            status_code = 200
+            message = '删除日历事件成功!'
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": {}}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+
 
 
 

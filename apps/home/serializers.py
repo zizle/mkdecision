@@ -1,7 +1,7 @@
 # _*_ coding:utf-8 _*_
 # __Author__： zizle
 from rest_framework import serializers
-from .models import NewsBulletin, Advertisement, DataCategory, NormalReport
+from .models import NewsBulletin, Advertisement, DataCategory, NormalReport, TransactionNotice, SpotCommodity, FinanceCalendar
 
 
 # 新闻公告序列化器
@@ -47,10 +47,9 @@ class NormalReportSerializer(serializers.ModelSerializer):
     category = serializers.SerializerMethodField()
     uploader = serializers.SerializerMethodField()
 
-
     class Meta:
         model = NormalReport
-        exclude  = ('create_time', 'update_time',)
+        exclude = ('create_time', 'update_time',)
 
     @staticmethod
     def get_uploader(obj):
@@ -70,3 +69,64 @@ class NormalReportSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_category(obj):
         return obj.category.name if obj.category else ''
+
+
+# 交易通知序列化器
+class TransactionNoticeSerializer(serializers.ModelSerializer):
+    category = serializers.SerializerMethodField()
+    uploader = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TransactionNotice
+        exclude = ('create_time', 'update_time',)
+
+    @staticmethod
+    def get_uploader(obj):
+        if obj.uploader.note:
+            text = obj.uploader.note
+        else:
+            text = obj.uploader.phone[:3] + '****' + obj.uploader.phone[7:]
+        return text
+
+    @staticmethod
+    def get_category(obj):
+        return obj.category.name if obj.category else ''
+
+
+# 现货报表系列化器
+class SpotCommoditySerializer(serializers.ModelSerializer):
+    uploader = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SpotCommodity
+        exclude = ('create_time', 'update_time',)
+
+    @staticmethod
+    def get_uploader(obj):
+        text = ''
+        if obj.uploader:
+            if obj.uploader.note:
+                text = obj.uploader.note
+            else:
+                text = obj.uploader.phone[:3] + '****' + obj.uploader.phone[7:]
+        return text
+
+
+# 财经日历序列化器
+class FinanceCalendarSerializer(serializers.ModelSerializer):
+    time = serializers.TimeField(format('%H:%M'), read_only=True)
+    uploader = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FinanceCalendar
+        exclude = ('create_time', 'update_time',)
+
+    @staticmethod
+    def get_uploader(obj):
+        text = ''
+        if obj.uploader:
+            if obj.uploader.note:
+                text = obj.uploader.note
+            else:
+                text = obj.uploader.phone[:3] + '****' + obj.uploader.phone[7:]
+        return text
