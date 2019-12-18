@@ -134,3 +134,5 @@ STATICFILES_DIRS = [
 AUTH_USER_MODEL = 'user.User'
 # 默认的有效期时间
 DEFAULT_EXPIRE_DATE = datetime.datetime.strptime('3000-01-01', '%Y-%m-%d')
+# 设置ENV变量，防止出现System Error
+PYDEVD_USE_FRAME_EVAL = False
