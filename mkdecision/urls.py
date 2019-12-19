@@ -20,5 +20,6 @@ urlpatterns = [
     path('user/', include('user.urls')),
     path('', include('basic.urls')),
     path('limit/', include('limit.urls')),
-    path('home/', include('home.urls'))
+    path('home/', include('home.urls')),
+    path('trend/', include('trend.urls'))
 ]

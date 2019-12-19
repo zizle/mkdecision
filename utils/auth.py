@@ -4,7 +4,7 @@ import datetime
 import time
 import jwt
 from django.conf import settings
-from limit.models import UserToClient
+from limit.models import UserToClient, UserToVariety
 
 
 # 用户可否进入客户端
@@ -17,6 +17,21 @@ def user_entered(user, client):
         return False
     # 如果存在则验证有效时间
     if user_to_client.expire_date and user_to_client.expire_date < datetime.date.today():
+        return False
+    else:
+        return True
+
+
+# 用户是否有品种的权限
+def variety_user_accessed(variety, user):
+    if user.is_superuser or user.is_operator:
+        return True
+    try:
+        user_to_variety = UserToVariety.objects.get(user=user, variety=variety)
+    except UserToVariety.DoesNotExist:
+        return False
+    # 如果存在则验证有效时间
+    if user_to_variety.expire_date and user_to_variety.expire_date < datetime.date.today():
         return False
     else:
         return True
