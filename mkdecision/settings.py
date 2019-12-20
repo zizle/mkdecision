@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'basic.apps.BasicConfig',  # 基础信息
     'limit.apps.LimitConfig',  # 权限管理
     'home.apps.HomeConfig',  # 首页
+    'trend.apps.TrendConfig',  # 数据分析
 ]
 """
 中间件功能介绍
