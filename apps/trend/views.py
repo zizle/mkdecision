@@ -8,8 +8,8 @@ from django.http.response import HttpResponse
 from utils.client import get_client
 from utils.auth import variety_user_accessed
 from basic.models import Variety
-from .models import TrendTableGroup, TrendTable
-from .serializers import TrendGroupTablesSerializer, VarietyTableGroupSerializer, TrendTableSerializer
+from .models import TrendTableGroup, TrendTable, VarietyChart
+from .serializers import TrendGroupTablesSerializer, VarietyTableGroupSerializer, TrendTableSerializer, ChartSerializer
 
 
 # 以品种为条件获取数据组别
@@ -331,7 +331,139 @@ class RetrieveTableView(View):
         )
 
 
+# 品种图表
+class ChartView(View):
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user:
+                raise ValueError('登录已过期，请重新登录!')
+            body_data = json.loads(request.body)
+            table_id = body_data.get('table_id', None)
+            if not table_id:
+                raise ValueError('未找到当前表!')
+            # 验证权限
+            table = TrendTable.objects.get(id=int(table_id))  # 所属表
+            variety = table.group.variety  # 所属品种
+            if not variety_user_accessed(variety=variety, user=request_user):
+                raise ValueError('您还没有这个品种的权限!')
+            # 创建图表信息
+            chart_name = body_data.get('chart_name', None)  # 名称
+            category = body_data.get('chart_category', None)  # 类型
+            x_col = body_data.get('x_col', None)  # x轴
+            y_left = body_data.get('y_left', None)  # 左轴
+            y_right = body_data.get('y_right', None)  # 右轴
+            is_top = body_data.get('is_top', False)  # 是否主页显示
+            if not all([chart_name, category]):
+                raise ValueError('图表名称或类型未设置！')
+            if category not in [c[0] for c in VarietyChart.CATEGORY]:
+                raise ValueError('不支持该类型的图表设置!')
+            if not x_col:
+                raise ValueError('请选择x轴数据列头！')
+            chart = VarietyChart(
+                name=chart_name,
+                category=category,
+                variety=variety,
+                table=table,
+                x_col=x_col,
+                y_left=y_left,
+                y_right=y_right,
+                is_top=is_top,
+                creator=request_user
+            )
+            chart.save()
+            message = '创建图表成功!'
+            status_code = 201
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": {}}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
 
+
+# 某品种下的图表
+class VarietyChartView(View):
+    def get(self, request, vid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        if not client:
+            charts = VarietyChart.objects.none()
+        else:
+            charts = VarietyChart.objects.filter(variety_id=int(vid))
+        serializer = ChartSerializer(instance=charts, many=True)
+        return HttpResponse(
+            content=json.dumps({"message": '获取图表信息成功！', "data": serializer.data}),
+            content_type="application/json; charset=utf-8",
+            status=200
+        )
+
+
+# 单个图表视图
+class ChartRetrieveView(View):
+    def get(self, request, cid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        try:
+            if not client:
+                raise ValueError('INVALID CLIENT!')
+            # 查询表
+            chart = VarietyChart.objects.get(id=int(cid))
+            serializer = ChartSerializer(instance=chart)
+            data = serializer.data
+            # 查询表详情的sql语句
+            query_sql = "SELECT * FROM %s WHERE id>1" % chart.table.sql_name
+            # 查询表头语句
+            header_sql = "SELECT * FROM %s WHERE id=1" % chart.table.sql_name
+            with connection.cursor() as cursor:
+                cursor.execute(header_sql)
+                header_data = cursor.fetchone()
+                cursor.execute(query_sql)
+                table_data = cursor.fetchall()  # 起始时间
+                data['header_data'] = header_data
+                data['table_data'] = table_data
+            message = '获取表数据成功！'
+            status_code = 200
+        except Exception as e:
+            data = {}
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": data}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+    def delete(self, request, cid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user:
+                raise ValueError('登录已过期！')
+            # 查询表
+            chart = VarietyChart.objects.get(id=int(cid))
+            if not variety_user_accessed(variety=chart.variety, user=request_user):
+                raise ValueError('您还没有该品种的权限!不能删除。')
+            chart.delete()
+            message = '删除图表成功!'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": {}}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
 
 
 

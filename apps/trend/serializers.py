@@ -4,7 +4,7 @@ import datetime
 from django.db import connection
 from rest_framework import serializers
 from basic.models import Variety
-from .models import TrendTableGroup, TrendTable
+from .models import TrendTableGroup, TrendTable, VarietyChart
 
 
 # 数据组序列化器(只序列化组，供品种序列化使用)
@@ -75,5 +75,12 @@ class TrendGroupTablesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TrendTableGroup
+        exclude = ('create_time', 'update_time',)
+
+
+# 图表信息序列化器
+class ChartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VarietyChart
         exclude = ('create_time', 'update_time',)
 
