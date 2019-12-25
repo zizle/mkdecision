@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(BASE_DIR, "apps"))  # 加入apps的导包路径
 SECRET_KEY = 'y96w=styr#1%r4z3h234_$n)oyesk()_u$ofgg*q$7nrib@pnn'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 # 允许访问的地址
 ALLOWED_HOSTS = ['*', ]
 

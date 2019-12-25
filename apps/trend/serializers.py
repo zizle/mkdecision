@@ -80,7 +80,20 @@ class TrendGroupTablesSerializer(serializers.ModelSerializer):
 
 # 图表信息序列化器
 class ChartSerializer(serializers.ModelSerializer):
+    variety = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    creator = serializers.SerializerMethodField()
+
     class Meta:
         model = VarietyChart
         exclude = ('create_time', 'update_time',)
+
+    @staticmethod
+    def get_creator(obj):
+        text = ''
+        if obj.creator:
+            if obj.creator.note:
+                text = obj.creator.note
+            else:
+                text = obj.creator.phone[:3] + '****' + obj.creator.phone[7:]
+        return text
 
