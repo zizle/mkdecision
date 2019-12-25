@@ -352,29 +352,19 @@ class ChartView(View):
             if not variety_user_accessed(variety=variety, user=request_user):
                 raise ValueError('您还没有这个品种的权限!')
             # 创建图表信息
-            chart_name = body_data.get('chart_name', None)  # 名称
-            category = body_data.get('chart_category', None)  # 类型
-            x_col = body_data.get('x_col', None)  # x轴
-            y_left = body_data.get('y_left', None)  # 左轴
-            y_right = body_data.get('y_right', None)  # 右轴
-            is_top = body_data.get('is_top', False)  # 是否主页显示
-            if not all([chart_name, category]):
-                raise ValueError('图表名称或类型未设置！')
-            if category not in [c[0] for c in VarietyChart.CATEGORY]:
-                raise ValueError('不支持该类型的图表设置!')
-            if not x_col:
-                raise ValueError('请选择x轴数据列头！')
-            chart = VarietyChart(
-                name=chart_name,
-                category=category,
-                variety=variety,
-                table=table,
-                x_col=x_col,
-                y_left=y_left,
-                y_right=y_right,
-                is_top=is_top,
-                creator=request_user
-            )
+            body_data['x_bottom'] = json.dumps(body_data['x_bottom'])
+            body_data['x_bottom_label'] = json.dumps(body_data['x_bottom_label'])
+            body_data['x_top'] = json.dumps(body_data['x_top'])
+            body_data['x_top_label'] = json.dumps(body_data['x_top_label'])
+            body_data['y_left'] = json.dumps(body_data['y_left'])
+            body_data['y_left_label'] = json.dumps(body_data['y_left_label'])
+            body_data['y_right'] = json.dumps(body_data['y_right'])
+            body_data['y_right_label'] = json.dumps(body_data['y_right_label'])
+            del body_data['table_id']
+            body_data['table'] = table
+            body_data['variety'] = variety
+            body_data['creator'] = request_user
+            chart = VarietyChart(**body_data)
             chart.save()
             message = '创建图表成功!'
             status_code = 201

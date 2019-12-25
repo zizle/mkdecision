@@ -46,9 +46,16 @@ class VarietyChart(BaseModel):
                                 verbose_name='所属品种')
     table = models.ForeignKey('TrendTable', related_name='table_charts', on_delete=models.CASCADE,
                               verbose_name='数据表')
-    x_col = models.CharField(max_length=16, verbose_name='x轴列')
+    x_bottom = models.CharField(max_length=16, verbose_name='x轴')
+    x_top = models.CharField(max_length=16, null=True, blank=True, verbose_name='上x轴')
     y_left = models.CharField(max_length=32, verbose_name='左轴')
     y_right = models.CharField(max_length=32, null=True, blank=True, verbose_name='右轴')
+    x_bottom_label = models.CharField(max_length=32, null=True, blank=True, verbose_name='x轴名称')
+    x_top_label = models.CharField(max_length=32, null=True, blank=True, verbose_name='上x轴名称')
+    y_left_label = models.CharField(max_length=32, null=True, blank=True, verbose_name='y轴名称')
+    y_right_label = models.CharField(max_length=32, null=True, blank=True, verbose_name='右y轴名称')
+    start = models.CharField(max_length=32, null=True, blank=True, verbose_name='起始')
+    end = models.CharField(max_length=32, null=True, blank=True, verbose_name='终止')
     is_top = models.BooleanField(default=False, verbose_name='主页展示')
     creator = models.ForeignKey('user.User', blank=True, null=True, on_delete=models.SET_NULL, verbose_name='创建者')
 
