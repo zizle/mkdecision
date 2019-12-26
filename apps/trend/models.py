@@ -57,6 +57,7 @@ class VarietyChart(BaseModel):
     start = models.CharField(max_length=32, null=True, blank=True, verbose_name='起始')
     end = models.CharField(max_length=32, null=True, blank=True, verbose_name='终止')
     is_top = models.BooleanField(default=False, verbose_name='主页展示')
+    is_show = models.BooleanField(default=False, verbose_name='品种展示')
     creator = models.ForeignKey('user.User', blank=True, null=True, on_delete=models.SET_NULL, verbose_name='创建者')
 
     class Meta:

@@ -124,11 +124,13 @@ JSON_WEB_TOKEN_EXPIRE = 7200
 
 # 系统文件存储的根路径,模型中使用upload_to的路径相对于本路径下
 MEDIA_ROOT = 'E:/mkDecision/'
+# MEDIA_ROOT = '/Users/zizle/Desktop/CODES/static/mkDecision/'
 
 # 静态文件
 STATIC_URL = "/mkDecision/"
 STATICFILES_DIRS = [
-    "E:/mkDecision/"
+    "E:/mkDecision/",
+    # "/Users/zizle/Desktop/CODES/static/mkDecision/"
 ]
 
 # 指定用户模型

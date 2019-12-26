@@ -333,6 +333,21 @@ class RetrieveTableView(View):
 
 # 品种图表
 class ChartView(View):
+    # 主页图表
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        if not client:
+            charts = VarietyChart.objects.none()
+        else:
+            charts = VarietyChart.objects.filter(is_top=True)
+        serializer = ChartSerializer(instance=charts, many=True)
+        return HttpResponse(
+            content=json.dumps({"message": '获取图表信息成功！', "data": serializer.data}),
+            content_type="application/json; charset=utf-8",
+            status=200
+        )
+
     def post(self, request):
         machine_code = request.GET.get('mc', None)
         client = get_client(machine_code)
@@ -382,11 +397,15 @@ class ChartView(View):
 class VarietyChartView(View):
     def get(self, request, vid):
         machine_code = request.GET.get('mc', None)
+        all_charts = request.GET.get('all', False)
         client = get_client(machine_code)
         if not client:
             charts = VarietyChart.objects.none()
         else:
-            charts = VarietyChart.objects.filter(variety_id=int(vid))
+            if all_charts:
+                charts = VarietyChart.objects.filter(variety_id=int(vid))
+            else:
+                charts = VarietyChart.objects.filter(variety_id=int(vid), is_show=True)
         serializer = ChartSerializer(instance=charts, many=True)
         return HttpResponse(
             content=json.dumps({"message": '获取图表信息成功！', "data": serializer.data}),
@@ -429,6 +448,43 @@ class ChartRetrieveView(View):
             content_type="application/json; charset=utf-8",
             status=status_code
         )
+
+    def patch(self, request, cid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user:
+                raise ValueError('登录已过期请重新登录!')
+            # 根据表获取品种
+            chart = VarietyChart.objects.get(id=int(cid))
+            # 修改图表
+            body_data = json.loads(request.body)
+            for key, value in body_data.items():
+                if key in ['is_top', 'is_show']:
+                    if key == 'is_top':
+                        if not request_user.is_operator: # 运营管理才能设置
+                            raise ValueError('您不能进行这个操作!')
+                    elif key == 'is_show':
+                        if not variety_user_accessed(variety=chart.variety, user=request_user):
+                            raise ValueError('您不能进行这项操作!')
+                    else:
+                        pass
+                    chart.__setattr__(key, value)
+            chart.save()
+            message = '展示状态修改成功!'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': {}}),
+            content_type='application/json; charset=utf-8',
+            status=status_code
+        )
+
 
     def delete(self, request, cid):
         machine_code = request.GET.get('mc', None)

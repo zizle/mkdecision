@@ -82,6 +82,8 @@ class TrendGroupTablesSerializer(serializers.ModelSerializer):
 class ChartSerializer(serializers.ModelSerializer):
     variety = serializers.SlugRelatedField(slug_field='name', read_only=True)
     creator = serializers.SerializerMethodField()
+    is_top = serializers.SerializerMethodField()
+    is_show = serializers.SerializerMethodField()
 
     class Meta:
         model = VarietyChart
@@ -97,3 +99,10 @@ class ChartSerializer(serializers.ModelSerializer):
                 text = obj.creator.phone[:3] + '****' + obj.creator.phone[7:]
         return text
 
+    @staticmethod
+    def get_is_top(obj):
+        return 1 if obj.is_top else 0
+
+    @staticmethod
+    def get_is_show(obj):
+        return 1 if obj.is_show else 0
