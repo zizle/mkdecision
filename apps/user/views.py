@@ -276,7 +276,10 @@ class UserBaseInfoView(View):
             new_data = json.loads(request.body)
             operate_user = User.objects.get(id=int(uid))
             for key, value in new_data.items():
-                if key in ['username', 'phone', 'email', 'note', 'is_active']:
+                if key in ['username', 'phone', 'email', 'note', 'is_active', 'is_operator', 'is_collector',
+                           'is_researcher']:
+                    if key == 'is_active' and operate_user.id == request_user.id:
+                        raise ValueError('不能对自己做此项修改。')
                     operate_user.__setattr__(key, value)
             operate_user.save()
             message = '修改成功!'
