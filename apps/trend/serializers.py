@@ -33,13 +33,11 @@ class TrendTableSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TrendTable
-        exclude = ('create_time', 'is_delete',)
+        exclude = ('create_time',)
 
 
     @staticmethod
     def get_end_date(obj):
-        if obj.is_delete:
-            return ''
         # 查询表中最大时间
         max_date_sql = "SELECT MAX(col_0) From %s WHERE id > 1" % obj.sql_name
         with connection.cursor() as cursor:
@@ -49,8 +47,6 @@ class TrendTableSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_start_date(obj):
-        if obj.is_delete:
-            return ''
         # 查询表中最小时间
         min_date_sql = "SELECT MIN(col_0) From %s WHERE id > 1" % obj.sql_name
         with connection.cursor() as cursor:

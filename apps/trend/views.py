@@ -89,7 +89,7 @@ class GroupRetrieveTablesView(View):
         if not client:
             tables = TrendTable.objects.none()
         else:
-            tables = TrendTable.objects.filter(group_id=int(gid), is_delete=False)
+            tables = TrendTable.objects.filter(group_id=int(gid))
         serializer = TrendTableSerializer(instance=tables, many=True)
         return HttpResponse(
             content=json.dumps({"message": '获取数据表成功！', "data": serializer.data}),
@@ -309,15 +309,14 @@ class RetrieveTableView(View):
                     table.editor = request_user
                     table.save()
             else:  # 删除整张表
+                if not request_user.is_operator:
+                    raise ValueError('你不能删除整个表。')
                 # 删除表的语句
                 delete_sql = "DROP TABLE %s" % table.sql_name
                 with transaction.atomic():
                     with connection.cursor() as cursor:
                         cursor.execute(delete_sql)
-                    table.update_time = datetime.datetime.now()
-                    table.editor = request_user
-                    table.is_delete = True
-                    table.save()
+                    table.delete()
             message = '删除操作成功！'
             status_code = 200
         except Exception as e:
@@ -484,7 +483,6 @@ class ChartRetrieveView(View):
             content_type='application/json; charset=utf-8',
             status=status_code
         )
-
 
     def delete(self, request, cid):
         machine_code = request.GET.get('mc', None)
