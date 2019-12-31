@@ -25,6 +25,8 @@ class MessageLinkSerializer(serializers.ModelSerializer):
 
 # 市场分析序列化器
 class MarketAnalysisSerializer(serializers.ModelSerializer):
+    update_time = serializers.DateTimeField(format('%Y-%m-%d'), read_only=True)
+
     class Meta:
         model = MarketAnalysis
         fields = '__all__'

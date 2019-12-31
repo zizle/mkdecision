@@ -4,6 +4,7 @@ import json
 import datetime
 import os
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.views.generic import View
 from django.http.response import HttpResponse
 from .models import MessageLink, MarketAnalysis
@@ -159,16 +160,29 @@ class MarketAnalysisView(View):
     def get(self, request):
         machine_code = request.GET.get('mc', None)
         client = get_client(machine_code)
+        current_page = request.GET.get('page', 1)
         if not client:
             instances = MarketAnalysis.objects.none()
         else:
-            instances = MarketAnalysis.objects.all()
-        serializer = MarketAnalysisSerializer(instance=instances, many=True)
-
+            instances = MarketAnalysis.objects.all().order_by('-update_time')
+        # 分页
+        paginator = Paginator(object_list=instances, per_page=25)
+        try:
+            page_list = paginator.get_page(current_page)
+            serializer = MarketAnalysisSerializer(instance=page_list, many=True)
+            data = dict()
+            data['contacts'] = serializer.data
+            data['total_page'] = paginator.num_pages
+            message = '获取市场分析文件信息成功'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = {}
         return HttpResponse(
-            content=json.dumps({'message': '获取市场分析文件信息成功', 'data': serializer.data}),
+            content=json.dumps({'message': message, 'data': data}),
             content_type='application/json charset=utf-8',
-            status=200
+            status=status_code
         )
 
     def post(self, request):
