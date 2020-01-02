@@ -38,6 +38,8 @@ class TrendTableSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_end_date(obj):
+        if obj.is_deleted:
+            return ''
         # 查询表中最大时间
         max_date_sql = "SELECT MAX(col_0) From %s WHERE id > 1" % obj.sql_name
         with connection.cursor() as cursor:
@@ -47,6 +49,8 @@ class TrendTableSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_start_date(obj):
+        if obj.is_deleted:
+            return ''
         # 查询表中最小时间
         min_date_sql = "SELECT MIN(col_0) From %s WHERE id > 1" % obj.sql_name
         with connection.cursor() as cursor:
@@ -67,11 +71,15 @@ class TrendTableSerializer(serializers.ModelSerializer):
 
 # 数据组含组下表序列化器  class TrendTableGroupSerializer 只是序列化组，并没有组下的表
 class TrendGroupTablesSerializer(serializers.ModelSerializer):
-    tables = TrendTableSerializer(read_only=True, many=True)
+    tables = serializers.SerializerMethodField()
 
     class Meta:
         model = TrendTableGroup
         exclude = ('create_time', 'update_time',)
+
+    def get_tables(self, obj):
+        serializer = TrendTableSerializer(obj.tables.filter(is_deleted=False), many=True)
+        return serializer.data
 
 
 # 图表信息序列化器
