@@ -316,13 +316,15 @@ class RetrieveTableView(View):
                 with transaction.atomic():
                     with connection.cursor() as cursor:
                         cursor.execute(delete_sql)
-                    table.delete()
+                    table.update_time = datetime.datetime.now()
+                    table.editor = request_user
+                    table.is_deleted = True
+                    table.save()
             message = '删除操作成功！'
             status_code = 200
         except Exception as e:
             message = str(e)
             status_code = 400
-
         return HttpResponse(
             content=json.dumps({"message": message, "data": []}),
             content_type="application/json; charset=utf-8",
@@ -339,7 +341,7 @@ class ChartView(View):
         if not client:
             charts = VarietyChart.objects.none()
         else:
-            charts = VarietyChart.objects.filter(is_top=True)
+            charts = VarietyChart.objects.filter(is_top=True, table__is_deleted=False)
         serializer = ChartSerializer(instance=charts, many=True)
         return HttpResponse(
             content=json.dumps({"message": '获取图表信息成功！', "data": serializer.data}),
@@ -402,9 +404,9 @@ class VarietyChartView(View):
             charts = VarietyChart.objects.none()
         else:
             if all_charts:
-                charts = VarietyChart.objects.filter(variety_id=int(vid))
+                charts = VarietyChart.objects.filter(variety_id=int(vid), table__is_deleted=False)
             else:
-                charts = VarietyChart.objects.filter(variety_id=int(vid), is_show=True)
+                charts = VarietyChart.objects.filter(variety_id=int(vid), table__is_deleted=False, is_show=True)
         serializer = ChartSerializer(instance=charts, many=True)
         return HttpResponse(
             content=json.dumps({"message": '获取图表信息成功！', "data": serializer.data}),
