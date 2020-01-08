@@ -23,6 +23,7 @@ class TrendTable(BaseModel):
     sql_name = models.CharField(max_length=32, verbose_name='数据库中表名称')
     creator = models.ForeignKey('user.User', related_name='create_trend_tables', null=True, blank=True, on_delete=models.SET_NULL, verbose_name='创建者')
     editor = models.ForeignKey('user.User', related_name='edit_trend_tables', null=True, blank=True, on_delete=models.SET_NULL, verbose_name='更新者')
+    origin_note = models.CharField(max_length=512, null=True, blank=True, verbose_name='数据来源')
     is_deleted = models.BooleanField(default=False, verbose_name='已删除')
 
     class Meta:
