@@ -122,6 +122,9 @@ class GroupRetrieveTablesView(View):
             table_data = body_data.get('table_data', None)  # 表数据
             if not table_data:
                 raise ValueError('您还没有上传任何数据！')
+            origin_note = body_data.get('origin_note', None)
+            if not origin_note:
+                raise ValueError('请标记数据来源.')
         except Exception as e:
             return HttpResponse(
                 content=json.dumps({"message": str(e), "data": []}),
@@ -169,7 +172,8 @@ class GroupRetrieveTablesView(View):
                     group=table_group,
                     sql_name=sql_table_name,
                     creator=request_user,
-                    editor=request_user
+                    editor=request_user,
+                    origin_note=origin_note
                 )
                 table.save()
             message = '上传成功'
