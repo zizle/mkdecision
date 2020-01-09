@@ -4,12 +4,12 @@ import re
 import json
 import datetime
 from django.db import transaction
+from django_redis import get_redis_connection
 from django.views.generic import View
 from django.http.response import HttpResponse
 from .models import User
 from .serializers import UserSerializer
-from basic.models import Client, Module
-from basic.serializers import ModuleSerializer
+from basic.models import Client
 from limit.models import UserToClient
 from utils.client import get_client
 from utils.auth import user_entered, generate_jwt, get_actions_with_user
@@ -198,6 +198,16 @@ class UsersView(View):
             phone = body_data.get('phone', None)
             if not phone or not re.match(r'^[1][3-9][0-9]{9}$', phone):
                 raise ValueError('请输入正确的手机号')
+            # 获取保存在redis中的验证码验证码图片验证码
+            image_code_id = body_data.get('image_code_id', '')
+            redis_conn = get_redis_connection('verify_codes')
+            real_image_code_text = redis_conn.get('imgcode_%s' % image_code_id)
+            if not real_image_code_text:
+                raise ValueError('验证码无效!')
+            image_code = body_data.get('image_code', None)
+            real_image_code_text = real_image_code_text.decode()  # 从redis取出的是bytes类型
+            if image_code.lower() != real_image_code_text.lower():
+                raise ValueError('输入的验证码有误!')
             # 开启数据库事务
             with transaction.atomic():
                 user = User.objects.create_user(
