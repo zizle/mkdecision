@@ -87,6 +87,26 @@ DATABASES = {
     }
 }
 
+# redis缓存
+CACHES = {
+    # 缓存使用
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+    # 存放图片验证码
+    "verify_codes": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
@@ -138,5 +158,5 @@ STATICFILES_DIRS = [
 AUTH_USER_MODEL = 'user.User'
 # 默认的有效期时间
 DEFAULT_EXPIRE_DATE = datetime.datetime.strptime('3000-01-01', '%Y-%m-%d')
-# 设置ENV变量，防止出现System Error
-PYDEVD_USE_FRAME_EVAL = False
+# 图片验证码有效时间2分钟
+IMAGE_CODE_REDIS_EXPIRES = 120

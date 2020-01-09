@@ -35,7 +35,6 @@ class TrendTableSerializer(serializers.ModelSerializer):
         model = TrendTable
         exclude = ('create_time',)
 
-
     @staticmethod
     def get_end_date(obj):
         if obj.is_deleted:
