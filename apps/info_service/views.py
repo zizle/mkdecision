@@ -7,10 +7,198 @@ from django.conf import settings
 from django.core.paginator import Paginator
 from django.views.generic import View
 from django.http.response import HttpResponse
-from .models import MessageLink, MarketAnalysis
-from .serializers import MessageLinkSerializer, MarketAnalysisSerializer
-from .forms import MarketAnalysisForm
+from .models import MessageLink, MarketAnalysis, SearchReport, TopicSearch
+from .serializers import MessageLinkSerializer, MarketAnalysisSerializer, SearchReportSerializer
+from .forms import MarketAnalysisForm, SearchReportForm, TopicSearchForm
 from utils.client import get_client
+
+
+# 专题研究
+class TopicSearchView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        current_page = request.GET.get('page', 1)
+        if not client:
+            instances = TopicSearch.objects.none()
+        else:
+            instances = TopicSearch.objects.all().order_by('-update_time')
+        # 分页
+        paginator = Paginator(object_list=instances, per_page=25)
+        try:
+            page_list = paginator.get_page(current_page)
+            serializer = SearchReportSerializer(instance=page_list, many=True)
+            data = dict()
+            data['contacts'] = serializer.data
+            data['total_page'] = paginator.num_pages
+            message = '获取专题研究文件信息成功'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = {}
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': data}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期或不能进行这项操作!')
+            file_name = request.POST.get('name', '')
+            if not file_name:
+                file_name = request.FILES.name
+            # 组织好数据
+            data_to_save = {
+                'name': file_name,
+                'creator': request_user.id,
+            }
+            form = TopicSearchForm(data_to_save, request.FILES)
+            if form.is_valid():
+                form.save()
+                message = '上传成功!'
+                status_code = 201
+            else:
+                raise ValueError(form.errors)
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+
+# 单个专题研究视图
+class TopicSearchRetrieveView(View):
+    def delete(self, request, sid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期!或不能进行这个操作！')
+            instance = TopicSearch.objects.get(id=int(sid))
+            if not request_user.is_operator and instance.creator.id != request_user.id:
+                raise ValueError('请不要删除他人上传的信息!')
+            instance.delete()
+            # 删除文件
+            file_path = settings.MEDIA_ROOT + instance.file.name
+            os.remove(file_path)
+            message = '删除成功！'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+
+# 调研报告
+class SearchReportView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        current_page = request.GET.get('page', 1)
+        if not client:
+            instances = SearchReport.objects.none()
+        else:
+            instances = SearchReport.objects.all().order_by('-update_time')
+        # 分页
+        paginator = Paginator(object_list=instances, per_page=25)
+        try:
+            page_list = paginator.get_page(current_page)
+            serializer = SearchReportSerializer(instance=page_list, many=True)
+            data = dict()
+            data['contacts'] = serializer.data
+            data['total_page'] = paginator.num_pages
+            message = '获取调研报告文件信息成功'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = {}
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': data}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期或不能进行这项操作!')
+            file_name = request.POST.get('name', '')
+            if not file_name:
+                file_name = request.FILES.name
+            # 组织好数据
+            data_to_save = {
+                'name': file_name,
+                'creator': request_user.id,
+            }
+            form = SearchReportForm(data_to_save, request.FILES)
+            if form.is_valid():
+                form.save()
+                message = '上传成功!'
+                status_code = 201
+            else:
+                raise ValueError(form.errors)
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+
+# 单个调研报告视图
+class SearchReportRetrieveView(View):
+    def delete(self, request, sid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期!或不能进行这个操作！')
+            instance = SearchReport.objects.get(id=int(sid))
+            if not request_user.is_operator and instance.creator.id != request_user.id:
+                raise ValueError('请不要删除他人上传的信息!')
+            instance.delete()
+            # 删除文件
+            file_path = settings.MEDIA_ROOT + instance.file.name
+            os.remove(file_path)
+            message = '删除成功！'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
 
 
 # 短信通视图

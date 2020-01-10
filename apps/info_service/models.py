@@ -28,3 +28,26 @@ class MarketAnalysis(BaseModel):
         verbose_name = '市场分析'
         verbose_name_plural = verbose_name
 
+
+# 调研报告
+class SearchReport(BaseModel):
+    name = models.CharField(max_length=256, verbose_name='名称')
+    file = models.FileField(upload_to='info/searchRpt/%Y/%m/%d/')
+    creator = models.ForeignKey('user.User', null=True, blank=True, on_delete=models.SET_NULL, verbose_name='创建者')
+
+    class Meta:
+        db_table = 'info_search_report'
+        verbose_name = '调研报告'
+        verbose_name_plural = verbose_name
+
+
+# 专题研究
+class TopicSearch(BaseModel):
+    name = models.CharField(max_length=256, verbose_name='名称')
+    file = models.FileField(upload_to='info/topicSch/%Y/%m/%d/')
+    creator = models.ForeignKey('user.User', null=True, blank=True, on_delete=models.SET_NULL, verbose_name='创建者')
+
+    class Meta:
+        db_table = 'info_topic_search'
+        verbose_name = '调研报告'
+        verbose_name_plural = verbose_name
