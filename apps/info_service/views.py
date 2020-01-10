@@ -8,10 +8,340 @@ from django.core.paginator import Paginator
 from django.views.generic import View
 from django.http.response import HttpResponse
 from django.core.files.storage import default_storage
-from .models import MessageLink, MarketAnalysis, SearchReport, TopicSearch
-from .serializers import MessageLinkSerializer, MarketAnalysisSerializer, SearchReportSerializer
-from .forms import MarketAnalysisForm, SearchReportForm, TopicSearchForm
+from .models import MessageLink, MarketAnalysis, SearchReport, TopicSearch, TradePolicy, InvestPlan, HedgePlan
+from .serializers import MessageLinkSerializer, MarketAnalysisSerializer, SearchReportSerializer, TradePolicySerializer, \
+    InvestPlanSerializer, HedgePlanSerializer
+from .forms import MarketAnalysisForm, SearchReportForm, TopicSearchForm, InvestPlanForm, HedgePlanForm
 from utils.client import get_client
+
+
+# 套保方案视图
+class HedgePlanView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        current_page = request.GET.get('page', 1)
+        if not client:
+            instances = HedgePlan.objects.none()
+        else:
+            instances = HedgePlan.objects.all().order_by('-update_time')
+        # 分页
+        paginator = Paginator(object_list=instances, per_page=25)
+        try:
+            page_list = paginator.get_page(current_page)
+            serializer = HedgePlanSerializer(instance=page_list, many=True)
+            data = dict()
+            data['contacts'] = serializer.data
+            data['total_page'] = paginator.num_pages
+            message = '获取投资方案文件信息成功'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = {}
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': data}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期或不能进行这项操作!')
+            file_name = request.POST.get('name', '')
+            if not file_name:
+                file_name = request.FILES.name
+            # 组织好数据
+            data_to_save = {
+                'name': file_name,
+                'creator': request_user.id,
+            }
+            form = HedgePlanForm(data_to_save, request.FILES)
+            if form.is_valid():
+                form.save()
+                message = '上传成功!'
+                status_code = 201
+            else:
+                raise ValueError(form.errors)
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+
+# 单个套保方案视图
+class HedgePlanRetrieveView(View):
+    def delete(self, request, pid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期!或不能进行这个操作！')
+            instance = HedgePlan.objects.get(id=int(pid))
+            if not request_user.is_operator and instance.creator.id != request_user.id:
+                raise ValueError('请不要删除他人上传的信息!')
+            instance.delete()
+            # 删除文件
+            file_path = settings.MEDIA_ROOT + instance.file.name
+            os.remove(file_path)
+            message = '删除成功！'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+
+# 投资方案
+class InvestPlanView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        current_page = request.GET.get('page', 1)
+        if not client:
+            instances = InvestPlan.objects.none()
+        else:
+            instances = InvestPlan.objects.all().order_by('-update_time')
+        # 分页
+        paginator = Paginator(object_list=instances, per_page=25)
+        try:
+            page_list = paginator.get_page(current_page)
+            serializer = InvestPlanSerializer(instance=page_list, many=True)
+            data = dict()
+            data['contacts'] = serializer.data
+            data['total_page'] = paginator.num_pages
+            message = '获取投资方案文件信息成功'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = {}
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': data}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期或不能进行这项操作!')
+            file_name = request.POST.get('name', '')
+            if not file_name:
+                file_name = request.FILES.name
+            # 组织好数据
+            data_to_save = {
+                'name': file_name,
+                'creator': request_user.id,
+            }
+            form = InvestPlanForm(data_to_save, request.FILES)
+            if form.is_valid():
+                form.save()
+                message = '上传成功!'
+                status_code = 201
+            else:
+                raise ValueError(form.errors)
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+
+# 单个投资方案视图
+class InvestPlanRetrieveView(View):
+    def delete(self, request, pid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期!或不能进行这个操作！')
+            instance = InvestPlan.objects.get(id=int(pid))
+            if not request_user.is_operator and instance.creator.id != request_user.id:
+                raise ValueError('请不要删除他人上传的信息!')
+            instance.delete()
+            # 删除文件
+            file_path = settings.MEDIA_ROOT + instance.file.name
+            os.remove(file_path)
+            message = '删除成功！'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+
+# 策略服务-交易策略
+class TradePolicyView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        min_date = request.GET.get('min_date', None)
+        client = get_client(machine_code)
+        if not client:
+            return HttpResponse(
+                content=json.dumps({'message': '获取短信通成功!', 'data': []}),
+                content_type='application/json charset=utf-8',
+                status=200
+            )
+        # 无最小时间，请求全部
+        if not min_date:
+            messages = TradePolicy.objects.all().order_by('-date', '-time')
+        else:
+            min_date = datetime.datetime.strptime(min_date, '%Y-%m-%d')
+            messages = TradePolicy.objects.filter(date__gte=min_date.date()).order_by('-date', '-time')
+        serializer = TradePolicySerializer(instance=messages, many=True)
+        return HttpResponse(
+            content=json.dumps({'message': '获取交易策略成功!', 'data': serializer.data}),
+            content_type='application/json charset=utf-8',
+            status=200
+        )
+
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期或不能进行这项操作!')
+            body_data = json.loads(request.body)
+            content = body_data.get('content', None)
+            if not content:
+                raise ValueError('请输入内容！')
+            date = datetime.datetime.strptime(body_data.get('date'), '%Y-%m-%d')
+            time = datetime.datetime.strptime(body_data.get('time'), '%H:%M:%S')
+            policy = TradePolicy(
+                date=date.date(),
+                time=time.time(),
+                content=content,
+                creator=request_user
+            )
+            policy.save()
+            message = '创建交易策略成功!'
+            status_code = 201
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+
+# 策略服务-单个交易策略
+class TradePolicyRetrieveView(View):
+    def get(self, request, pid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            instance = TradePolicy.objects.get(id=int(pid))
+            serializer = TradePolicySerializer(instance=instance)
+            data = serializer.data
+            message = '获取交易策略成功！'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = {}
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': data}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+    # 修改
+    def put(self, request, pid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期!或不能进行这个操作！')
+            instance = TradePolicy.objects.get(id=int(pid))
+            if not request_user.is_operator and instance.creator.id != request_user.id:
+                raise ValueError('请不要修改他人上传的信息!')
+            body_data = json.loads(request.body)
+            content = body_data.get('content', None)
+            if not content:
+                raise ValueError('请输入内容！')
+            date = datetime.datetime.strptime(body_data.get('date'), '%Y-%m-%d')
+            time = datetime.datetime.strptime(body_data.get('time'), '%H:%M:%S')
+            instance.date = date.date()
+            instance.time = time.time()
+            instance.content = content
+            instance.save()
+            message = '修改交易策略成功！'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': {}}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+    def delete(self, request, pid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_collector:
+                raise ValueError('登录已过期!或不能进行这个操作！')
+            instance = TradePolicy.objects.get(id=int(pid))
+            if not request_user.is_operator and instance.creator.id != request_user.id:
+                raise ValueError('请不要删除他人上传的信息!')
+            instance.delete()
+            message = '删除成功！'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
 
 
 # 制度考核
