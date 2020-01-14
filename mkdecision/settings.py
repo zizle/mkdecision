@@ -81,9 +81,17 @@ WSGI_APPLICATION = 'mkdecision.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': os.path.join(BASE_DIR, 'db.mkdecision'),
+    # }
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.mkdecision'),
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': 'localhost',
+        'PORT': 3306,
+        'USER': 'mkdecisioner',
+        'PASSWORD': 'mkdecision200114',
+        'NAME': 'mkdecision_test',
     }
 }
 
