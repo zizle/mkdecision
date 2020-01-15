@@ -152,7 +152,7 @@ class GroupRetrieveTablesView(View):
             else:
                 save_values += str(tuple(item)) + ','
         # 创建表的sql语句
-        create_sql = "CREATE TABLE %s (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT%s);" % (sql_table_name, cols)
+        create_sql = "CREATE TABLE %s (id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT%s);" % (sql_table_name, cols)
         # 保存数据的sql语句
         save_sql = "INSERT INTO %s (%s) VALUES %s" % (sql_table_name, save_cols, save_values)
         # print('创建表的语句:\n', create_sql)
@@ -180,6 +180,7 @@ class GroupRetrieveTablesView(View):
             status_code = 201
             data = []
         except Exception as e:
+            print(e)
             message = str(e)
             status_code = 400
             data = []

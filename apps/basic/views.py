@@ -1,5 +1,6 @@
 # _*_ coding:utf-8 _*_
 # __Author__： zizle
+import os
 import json
 import random
 from io import BytesIO
@@ -31,7 +32,8 @@ class ImageCodeView(View):
         # 生成一个图片画笔对象
         draw_obj = ImageDraw.Draw(img_obj)
         # 加载字体文件， 得到一个字体对象
-        font_obj = ImageFont.truetype("static/KumoFont.ttf", 28)
+        ttf_path = os.path.join(settings.BASE_DIR, "static/KumoFont.ttf")
+        font_obj = ImageFont.truetype(ttf_path, 28)
         # 开始生成随机字符串并且写到图片上
         tmp_list = []
         for i in range(4):
