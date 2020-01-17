@@ -14,4 +14,6 @@ urlpatterns = [
     path(r'group-varieties/', views.GroupVarietiesView.as_view()),  # 获取品种的组别(含组下品种)
     re_path(r'^group-varieties/(?P<gid>\d+)/$', views.GroupRetrieveVarietiesView.as_view()),  # 单个品种组下的所有品种
     re_path(r'variety/(?P<vid>\d+)/$', views.VarietyRetrieveView.as_view()),  # 某个品种详细视图
+    path(r'client_record/', views.ClientRecordView.as_view()),  # 获取客户端记录
+    re_path(r'module_record/', views.ModuleOpenRecordView.as_view())  # 模块访问记录
 ]

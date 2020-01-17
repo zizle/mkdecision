@@ -110,6 +110,5 @@ class FinanceCalendar(BaseModel):
 
     class Meta:
         db_table = "home_finance_calendar"
-        unique_together = ('date', 'country', 'event')
         verbose_name = "财经日历"
 

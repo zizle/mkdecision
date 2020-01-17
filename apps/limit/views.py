@@ -4,7 +4,7 @@ import json
 import datetime
 from django.views.generic import View
 from django.http.response import HttpResponse
-from basic.models import Client, Module, Variety
+from basic.models import Client, Module, Variety, ModuleOpenRecord
 from utils.client import get_client
 from .models import UserToModule, UserToClient, UserToVariety
 from .serializers import ClientsToUserSerializer, ModulesToUserSerializer, VarietiesToUserSerializer
@@ -15,7 +15,8 @@ from user.models import User
 class ModuleAccessedView(View):
     def get(self, request, mid):
         machine_code = request.GET.get('mc', None)
-        if not get_client(machine_code):
+        client = get_client(machine_code)
+        if not client:
             return HttpResponse(
                 content=json.dumps({"message": "INVALID CLIENT.", "data": {'permission': 0}}),
                 content_type="application/json; charset=utf-8",
@@ -23,6 +24,17 @@ class ModuleAccessedView(View):
             )
         user = request.user
         mid = int(mid)
+        if user and mid > 0:
+            # print('用户有登录进行记录访问的模块')
+            try:
+                record = ModuleOpenRecord(
+                    client=client,
+                    module_id=mid,
+                    user=user
+                )
+                record.save()
+            except Exception:
+                pass
         if mid < 0:  # 内部人员管理操作【数据管理】【运营管理】【权限管理】
             # 验证用户是否是内部人员
             if user and user.is_researcher:
