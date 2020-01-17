@@ -6,12 +6,88 @@ import random
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 from django_redis import get_redis_connection
+from django.db import transaction, connection
+from django.db.models import Count
 from django.conf import settings
 from django.views.generic import View
 from django.http.response import HttpResponse
 from utils.client import get_client
-from .models import Client, Module, VarietyGroup, Variety
-from .serializers import ClientSerializer, ModuleSerializer, VarietyGroupSerializer, VarietySerializer
+from .models import Client, Module, VarietyGroup, Variety, ClientOpenRecord, ModuleOpenRecord
+from .serializers import ClientSerializer, ModuleSerializer, VarietyGroupSerializer, VarietySerializer, ClientOpenRecordSerializer
+
+
+""" 客户端记录 """
+
+
+class ClientRecordView(View):
+    def get(self, request):
+        machine_code = request.GET.get('mc', '')
+        client = get_client(machine_code)
+        records = []
+        if not client:
+            pass
+        else:
+            select = {'day': connection.ops.date_trunc_sql('day', 'create_time')}
+            result = ClientOpenRecord.objects.extra(select=select).values('client', 'day').annotate(day_count=Count('id'))
+            for obj_dict in result:
+                obj_dict['day'] = obj_dict['day'].strftime('%Y-%m-%d')
+                obj_dict['client'], obj_dict['category'] = self.get_client_name(obj_dict['client'])
+                records.append(obj_dict)
+
+        return HttpResponse(
+            content=json.dumps({'message': '获取记录成功', 'data': records}),
+            content_type='application/json; charset=utf-8',
+            status=200
+        )
+
+    @staticmethod
+    def get_client_name(client_id):
+        try:
+            client = Client.objects.get(id=client_id)
+        except Exception as e:
+            return '', ''
+        else:
+            return client.name if client.name else client.machine_code, '管理端' if client.is_manager else '普通端'
+
+
+""" 模块访问记录 """
+
+
+# 模块访问记录
+class ModuleOpenRecordView(View):
+    obj_user = 0
+
+    def get(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        records = []
+        if not client:
+            pass
+        else:
+            select = {'day': connection.ops.date_trunc_sql('day', 'create_time')}
+            result = ModuleOpenRecord.objects.extra(select=select).values('user', 'day', 'module').annotate(day_count=Count('id'))
+            print(result)
+            for obj_dict in result:
+                # print(obj_dict, type(obj_dict))
+                records.append(self.covert_obj(obj_dict))
+
+        return HttpResponse(
+            content=json.dumps({'message': '获取记录成功', 'data': records}),
+            content_type='application/json; charset=utf-8',
+            status=200
+        )
+
+    def covert_obj(self, obj_dict):
+        obj_dict['day'] = obj_dict['day'].strftime('%Y-%m-%d')
+        try:
+            record = ModuleOpenRecord.objects.filter(user_id=obj_dict['user'], module_id=obj_dict['module']).first()
+            obj_dict['user'] = record.user.phone + '(' + record.user.note + ')'
+            obj_dict['module'] = record.module.name
+        except Exception as e:
+            print(e)
+            obj_dict['user'] = ''
+            obj_dict['module'] = ''
+        return obj_dict
 
 
 """ 验证码 """
@@ -102,16 +178,20 @@ class ClientView(View):
             if not machine_code:
                 raise ValueError('缺少【机器码】.')
             # 查询客户端存在与否
-            client = get_client(machine_code)
-            if client:  # 存在，更新身份
-                client.is_manager = is_manager
-            else:  # 不存在则创建
-                client = Client(
-                    name=name,
-                    machine_code=machine_code,
-                    is_manager=is_manager
-                )
-            client.save()
+            with transaction.atomic():  # 数据库事务
+                client = get_client(machine_code)
+                if client:  # 存在，更新身份
+                    client.is_manager = is_manager
+                else:  # 不存在则创建
+                    client = Client(
+                        name=name,
+                        machine_code=machine_code,
+                        is_manager=is_manager
+                    )
+                client.save()
+                # print('用户打开了客户端，进行记录')
+                record = ClientOpenRecord(client=client)
+                record.save()
             message = '创建成功.'
             status_code = 200
             data = {'machine_code': client.machine_code}

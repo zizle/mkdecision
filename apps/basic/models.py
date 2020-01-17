@@ -19,6 +19,16 @@ class Client(BaseModel):
         verbose_name_plural = verbose_name
 
 
+# 记录客户端打开的情况
+class ClientOpenRecord(BaseModel):
+    client = models.ForeignKey('Client', on_delete=models.CASCADE, verbose_name='客户端')
+
+    class Meta:
+        db_table = 'basic_client_opened'
+        verbose_name = '客户端打开记录'
+        verbose_name_plural = verbose_name
+
+
 """ 系统主功能模块相关 """
 
 
@@ -31,6 +41,18 @@ class Module(BaseModel):
     class Meta:
         db_table = "basic_module"
         verbose_name = "主功能菜单"
+        verbose_name_plural = verbose_name
+
+
+# 记录用户-客户端访问模块
+class ModuleOpenRecord(BaseModel):
+    client = models.ForeignKey('Client', on_delete=models.CASCADE, verbose_name='客户端')
+    module = models.ForeignKey('Module', on_delete=models.CASCADE, verbose_name='模块')
+    user = models.ForeignKey('user.User', null=True, blank=True, on_delete=models.CASCADE, verbose_name='用户')
+
+    class Meta:
+        db_table = 'basic_module_opened'
+        verbose_name = '模块访问记录'
         verbose_name_plural = verbose_name
 
 

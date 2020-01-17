@@ -1,7 +1,7 @@
 # _*_ coding:utf-8 _*_
 # __Author__： zizle
 from rest_framework import serializers
-from .models import Client, Module, VarietyGroup, Variety
+from .models import Client, Module, VarietyGroup, Variety, ClientOpenRecord
 
 
 # 客户端序列化器
@@ -59,4 +59,11 @@ class VarietyGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = VarietyGroup
         fields = ('id', 'name', 'varieties')
+
+
+# 客户端记录序列化器
+class ClientOpenRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClientOpenRecord
+        fields = '__all__'
 
