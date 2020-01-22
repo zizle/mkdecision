@@ -21,7 +21,7 @@ class NewsBulletinView(View):
         if not client:
             news = NewsBulletin.objects.none()
         else:
-            news = NewsBulletin.objects.all()
+            news = NewsBulletin.objects.order_by('-create_time').all()[:12]
         serializer = NewsBulletinSerializer(instance=news, many=True)
         return HttpResponse(
             content=json.dumps({"message": '获取公告数据成功!', "data": serializer.data}),
@@ -239,8 +239,10 @@ class AdvertiseWithNameView(View):
                 status=400
             )
         image = 'home/advertisement/image/' + name
+        print(image)
         try:
             ad = Advertisement.objects.get(image=image)
+            print(ad)
             serializer = AdvertisementSerializer(instance=ad)
             message = '获取数据成功!'
             status_code = 200

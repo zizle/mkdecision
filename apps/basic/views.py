@@ -28,12 +28,21 @@ class ClientRecordView(View):
             pass
         else:
             select = {'day': connection.ops.date_trunc_sql('day', 'create_time')}
-            result = ClientOpenRecord.objects.extra(select=select).values('client', 'day').annotate(day_count=Count('id'))
+            result = ClientOpenRecord.objects.extra(select=select).values('client', 'day')\
+                .annotate(day_count=Count('id')).order_by('-day')
+            # 根据客户端查询
+            client_id = request.GET.get('client', None)
+            try:
+                client_id = int(client_id)
+            except Exception:
+                client_id = None
+            if client_id is not None:
+                result = result.filter(client=client_id)
+
             for obj_dict in result:
                 obj_dict['day'] = obj_dict['day'].strftime('%Y-%m-%d')
-                obj_dict['client'], obj_dict['category'] = self.get_client_name(obj_dict['client'])
+                obj_dict['client_name'], obj_dict['category'] = self.get_client_name(obj_dict['client'])
                 records.append(obj_dict)
-
         return HttpResponse(
             content=json.dumps({'message': '获取记录成功', 'data': records}),
             content_type='application/json; charset=utf-8',
@@ -44,10 +53,14 @@ class ClientRecordView(View):
     def get_client_name(client_id):
         try:
             client = Client.objects.get(id=client_id)
-        except Exception as e:
+        except Exception:
             return '', ''
         else:
-            return client.name if client.name else client.machine_code, '管理端' if client.is_manager else '普通端'
+            if client.name:
+                name = client.machine_code + '(' + client.name + ')'
+            else:
+                name = client.machine_code + '(未命名)'
+            return name, '管理端' if client.is_manager else '普通端'
 
 
 """ 模块访问记录 """
@@ -65,29 +78,42 @@ class ModuleOpenRecordView(View):
             pass
         else:
             select = {'day': connection.ops.date_trunc_sql('day', 'create_time')}
-            result = ModuleOpenRecord.objects.extra(select=select).values('user', 'day', 'module').annotate(day_count=Count('id'))
-            print(result)
-            for obj_dict in result:
-                # print(obj_dict, type(obj_dict))
-                records.append(self.covert_obj(obj_dict))
-
+            result = ModuleOpenRecord.objects.extra(select=select).values('user', 'day', 'module')\
+                .annotate(day_count=Count('id')).order_by('-day')  # 最后对统计结果进行时间的倒序排列
+            # result = result.filter(user__is_superuser=False)
+            # 根据用户查询
+            user_id = request.GET.get('user', None)
+            try:
+                user_id = int(user_id)
+            except Exception:
+                user_id = None
+            if user_id is not None:
+                result = result.filter(user=user_id)
+            records = self.covert_obj(result.all())
         return HttpResponse(
             content=json.dumps({'message': '获取记录成功', 'data': records}),
             content_type='application/json; charset=utf-8',
             status=200
         )
 
-    def covert_obj(self, obj_dict):
-        obj_dict['day'] = obj_dict['day'].strftime('%Y-%m-%d')
-        try:
-            record = ModuleOpenRecord.objects.filter(user_id=obj_dict['user'], module_id=obj_dict['module']).first()
-            obj_dict['user'] = record.user.phone + '(' + record.user.note + ')'
-            obj_dict['module'] = record.module.name
-        except Exception as e:
-            print(e)
-            obj_dict['user'] = ''
-            obj_dict['module'] = ''
-        return obj_dict
+    def covert_obj(self, obj_dicts):
+        records = []
+        for obj_dict in obj_dicts:
+            obj_dict['day'] = obj_dict['day'].strftime('%Y-%m-%d')
+            try:
+                record = ModuleOpenRecord.objects.filter(user_id=obj_dict['user'], module_id=obj_dict['module']).first()
+                if record.user.is_superuser:  # 剔除超级管理员数据
+                    continue
+                if record.user.note:
+                    obj_dict['user_note'] = record.user.phone + '(' + record.user.note + ')'
+                else:
+                    obj_dict['user_note'] = record.user.phone + '(未备注)'
+                obj_dict['module'] = record.module.name
+            except Exception as e:
+                obj_dict['user'] = ''
+                obj_dict['module'] = ''
+            records.append(obj_dict)
+        return records
 
 
 """ 验证码 """
