@@ -131,12 +131,17 @@ class GroupRetrieveTablesView(View):
                 content_type="application/json; charset=utf-8",
                 status=403  # 理解请求但是拒绝执行,返回中包含错误信息
             )
-        # 当前品种下的数据表数量计算
-        table_count = 0
+        # 当前品种下的数据表编号计算(需取出当前数据库中最大的表编号数量)
+        table_index_num = 0
         for group in attach_variety.trend_table_groups.all():
-            table_count += group.tables.count()
+            for table in group.tables.all():
+                table_sql_name = table.sql_name
+                index_num = table_sql_name.rsplit('_', 1)[1]
+                if int(index_num) > table_index_num:
+                    table_index_num = int(index_num)
+        table_index_num += 1
         # 新表在数据库中的名称
-        sql_table_name = '%s_table_%d' % (attach_variety.name_en, table_count)  # 数据库新建表的名称
+        sql_table_name = '%s_table_%d' % (attach_variety.name_en, table_index_num)  # 数据库新建表的名称
         column_headers = table_data['header_labels']  # 表头(存入新建表的第一行)
         # 创建sql语句
         cols = ''
@@ -321,10 +326,11 @@ class RetrieveTableView(View):
                 with transaction.atomic():
                     with connection.cursor() as cursor:
                         cursor.execute(delete_sql)
-                    table.update_time = datetime.datetime.now()
-                    table.editor = request_user
-                    table.is_deleted = True
-                    table.save()
+                    # table.update_time = datetime.datetime.now()
+                    # table.editor = request_user
+                    # table.is_deleted = True
+                    # table.save()
+                    table.delete()
             message = '删除操作成功！'
             status_code = 200
         except Exception as e:

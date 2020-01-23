@@ -516,6 +516,39 @@ class GroupRetrieveVarietiesView(View):
             status=status_code
         )
 
+    def delete(self, request, gid):
+        print('删除gid', gid)
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not user or not user.is_operator:
+                raise ValueError('您登录已过期或不能进行这项操作!')
+            group = VarietyGroup.objects.get(id=int(gid))
+            with transaction.atomic():
+                # 删除此组所有品种下的所有表
+                with connection.cursor() as cursor:
+                    for variety in group.varieties.all():
+                        for i in range(9999):
+                            delete_sql = "DROP TABLE %s;" % (variety.name_en + '_table_' + str(i))
+                            try:
+                                cursor.execute(delete_sql)
+                            except Exception:
+                                break
+                group.delete()
+            message = '删除成功!'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": {}}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
 
 # 单个品种详细视图
 class VarietyRetrieveView(View):
