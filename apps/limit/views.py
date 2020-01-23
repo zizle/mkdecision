@@ -44,8 +44,8 @@ class ModuleAccessedView(View):
                     status=200
                 )
             else:
-                HttpResponse(
-                    content=json.dumps({"message": "'您还没登录或登录已过期\n请先登录再进行操作!", "data": {'permission': 0}}),
+                return HttpResponse(
+                    content=json.dumps({"message": "您还没登录或登录已过期\n请先登录再进行操作!", "data": {'permission': 0}}),
                     content_type="application/json; charset=utf-8",
                     status=200
                 )

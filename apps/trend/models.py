@@ -30,7 +30,6 @@ class TrendTable(BaseModel):
         db_table = 'trend_table'
         verbose_name = "数据表名"
         verbose_name_plural = verbose_name
-        unique_together = (('name', 'group'),)
 
 
 # 品种数据图

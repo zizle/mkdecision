@@ -208,10 +208,13 @@ class UsersView(View):
             real_image_code_text = real_image_code_text.decode()  # 从redis取出的是bytes类型
             if image_code.lower() != real_image_code_text.lower():
                 raise ValueError('输入的验证码有误!')
+            username = body_data.get('username', ''),
+            if not username:
+                raise ValueError('还没有输入用户名.')
             # 开启数据库事务
             with transaction.atomic():
                 user = User.objects.create_user(
-                    username=body_data.get('username', ''),
+                    username=username,
                     email=body_data.get('email', ''),
                     phone=body_data.get('phone', None),
                     password=password,
@@ -223,6 +226,11 @@ class UsersView(View):
                     client=client
                 )
                 user_to_client.save()
+                # 赋予客户端名称当前的用户名（当前客户端无名称时才赋予）
+                # 有名称也赋予将会对后端所做的修改再次做出修改
+                if not client.name:
+                    client.name = username
+                    client.save()
         except Exception as e:
             return HttpResponse(
                 content=json.dumps({"message": str(e), "data": {}}),
