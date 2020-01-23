@@ -11,7 +11,7 @@ import os
 import sys
 
 # 虚拟环境包位置
-virtual_dir = 'E:/Virtualenv/customerService/Lib/site-packages'
+virtual_dir = 'E:/Virtualenv/mkDecision/Lib/site-packages'
 sys.path.insert(0, virtual_dir)
 # 项目文件位置
 from django.core.wsgi import get_wsgi_application
