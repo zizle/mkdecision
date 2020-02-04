@@ -95,6 +95,7 @@ DATABASES = {
     }
 }
 
+
 # redis缓存
 CACHES = {
     # 缓存使用
