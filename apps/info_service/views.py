@@ -15,6 +15,33 @@ from .forms import MarketAnalysisForm, SearchReportForm, TopicSearchForm, Invest
 from utils.client import get_client
 
 
+# 培训服务-品种介绍
+class VarietyIntroView(View):
+    def post(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_operator:
+                raise ValueError('登录已过期或不能进行这项操作!')
+            file_path = settings.MEDIA_ROOT + 'info/varietyIntro/培训服务_品种介绍.pdf'
+            default_storage.delete(file_path)  # 删除原来的文件
+            # 获取文件保存
+            default_storage.save(file_path, request.FILES.get('file'))
+            message = '上传成功!'
+            status_code = 201
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({'message': message, 'data': []}),
+            content_type='application/json charset=utf-8',
+            status=status_code
+        )
+
+
 # 套保方案视图
 class HedgePlanView(View):
     def get(self, request):

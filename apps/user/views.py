@@ -208,7 +208,7 @@ class UsersView(View):
             real_image_code_text = real_image_code_text.decode()  # 从redis取出的是bytes类型
             if image_code.lower() != real_image_code_text.lower():
                 raise ValueError('输入的验证码有误!')
-            username = body_data.get('username', ''),
+            username = body_data.get('username', '')
             if not username:
                 raise ValueError('还没有输入用户名.')
             # 开启数据库事务
