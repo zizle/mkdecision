@@ -22,5 +22,5 @@ urlpatterns = [
     re_path(r'^invest-plan/(?P<pid>\d+)/$', views.InvestPlanRetrieveView.as_view()),  # 单个投资方案
     path('hedge-plan/', views.HedgePlanView.as_view()),  # 策略服务-套保方案
     re_path(r'^hedge-plan/(?P<pid>\d+)/$', views.HedgePlanRetrieveView.as_view()),  # 单个套保方案
-
+    path('variety-intro/', views.VarietyIntroView.as_view()),  # 培训服务-品种介绍
 ]

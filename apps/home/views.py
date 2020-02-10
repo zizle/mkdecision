@@ -4,13 +4,16 @@ import json
 import os
 import datetime
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.views.generic import View
 from django.http.response import HttpResponse
 from .forms import NewsBulletinForm, AdvertisementForm, NormalReportForm, TransactionNoticeForm
 from .models import NewsBulletin, Advertisement, DataCategory, NormalReport, TransactionNotice, SpotCommodity, FinanceCalendar
 from .serializers import NewsBulletinSerializer, AdvertisementSerializer, DataCategorySerializer, NormalReportSerializer,\
     TransactionNoticeSerializer, SpotCommoditySerializer, FinanceCalendarSerializer
+from basic.models import Variety
 from utils.client import get_client
+from utils.auth import variety_user_accessed
 
 
 # 新闻公告视图
@@ -111,7 +114,8 @@ class NewsBulletinRetrieveView(View):
             news = NewsBulletin.objects.get(id=int(nid))
             if news.file:  # 删除原文件
                 file_path = settings.MEDIA_ROOT + news.file.name
-                os.remove(file_path)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
             news.delete()
             status_code = 200
             message = '删除公告成功!'
@@ -332,22 +336,32 @@ class NormalReportView(View):
                 params['category_id'] = category
             # 查询
             variety = int(body_data.get('variety'))
+            current_page = request.GET.get('page', 1)
             if variety != 0:
-                reports = list()
-                for report in NormalReport.objects.filter(**params):
+                instances = list()
+                for report in NormalReport.objects.filter(**params).order_by('-date'):
                     related_vids = [v.id for v in report.varieties.all()]
                     if variety in related_vids:
-                        reports.append(report)
+                        instances.append(report)
+                paginator = Paginator(object_list=instances, per_page=50)
+                reports = paginator.get_page(current_page)
+
             else:
-                reports = NormalReport.objects.filter(**params)
+                instances = NormalReport.objects.filter(**params).order_by('-date')
+                paginator = Paginator(object_list=instances, per_page=50)
+                reports = paginator.get_page(current_page)
             serializer = NormalReportSerializer(instance=reports, many=True)
+            data = dict()
+            data['contacts'] = serializer.data
+            data['total_page'] = paginator.num_pages
             message = '获取常规报告成功！'
             status_code = 200
-            data = serializer.data
         except Exception as e:
             message = str(e)
             status_code = 400
-            data = []
+            data = dict()
+            data['contacts'] = []
+            data['total_page'] = 1
         return HttpResponse(
             content=json.dumps({'message': message, 'data': data}),
             content_type='application/json; charset=utf-8',
@@ -376,9 +390,11 @@ class NormalReportView(View):
             related_vids = eval(request.POST.get('variety_ids', 0))
             if not related_vids:
                 raise ValueError('请选择所属品种!')
-            # variety_instance = Variety.objects.get(id=vid)
-            # if not user_accessed_variety(user, variety_instance):  # 验证用户品种权限
-            #     raise ValueError('您还没这个品种权限.')
+            for vid in related_vids:
+                variety_instance = Variety.objects.get(id=vid)
+                # 验证用户品种权限
+                if not variety_user_accessed(variety=variety_instance, user=request_user):
+                    raise ValueError('您还没这个品种权限.')
             # 组织好数据
             data_to_save = {
                 'name': file_name,
@@ -450,15 +466,23 @@ class TransactionNoticeView(View):
             else:
                 params['category_id'] = category
             # 查询
-            notices = TransactionNotice.objects.filter(**params)
-            serializer = TransactionNoticeSerializer(instance=notices, many=True)
+            notices = TransactionNotice.objects.filter(**params).order_by('-create_time')
+            # 分页
+            current_page = request.GET.get('page', 1)
+            paginator = Paginator(object_list=notices, per_page=50)
+            notice_list = paginator.get_page(current_page)
+            serializer = TransactionNoticeSerializer(instance=notice_list, many=True)
+            data = dict()
+            data['contacts'] = serializer.data
+            data['total_page'] = paginator.num_pages
             message = '获取交易通知成功!'
             status_code = 200
-            data = serializer.data
         except Exception as e:
             message = str(e)
             status_code = 400
-            data = []
+            data = dict()
+            data['contacts'] = []
+            data['total_page'] = 1
         return HttpResponse(
             content=json.dumps({'message': message, 'data': data}),
             content_type='application/json; charset=utf-8',
