@@ -129,6 +129,37 @@ class NewsBulletinRetrieveView(View):
         )
 
 
+# 更多新闻视图
+class MoreNewsView(View):
+    def get(self, request):
+        machine = request.GET.get('mc', None)
+        client = get_client(machine)
+        try:
+            if not client:
+                raise ValueError('INVALIE CLIENT.')
+            news = NewsBulletin.objects.order_by('-create_time').all()
+            current_page = request.GET.get('page', 1)
+            paginator = Paginator(object_list=news, per_page=25)
+            news_list = paginator.get_page(current_page)
+            serializer = NewsBulletinSerializer(instance=news_list, many=True)
+            data = dict()
+            data['contacts'] = serializer.data
+            data['total_page'] = paginator.num_pages
+            message = '获取新闻公告成功.'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = dict()
+            data['contacts'] = []
+            data['total_page'] = 1
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": data}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
 # 广告视图
 class AdvertiseView(View):
     def get(self, request):

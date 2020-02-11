@@ -31,7 +31,7 @@ def variety_user_accessed(variety, user):
     except UserToVariety.DoesNotExist:
         return False
     # 如果存在则验证有效时间
-    if user_to_variety.expire_date and user_to_variety.expire_date < datetime.date.today():
+    if user_to_variety.expire_date and user_to_variety.expire_date <= datetime.date.today():
         return False
     else:
         return True
