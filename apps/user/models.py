@@ -38,6 +38,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser):
     username = models.CharField(max_length=20, blank=True, verbose_name='用户名/昵称')
     phone = models.CharField(max_length=11, unique=True, verbose_name='手机')
+    avatar = models.CharField(max_length=512, default='', verbose_name='头像')
     email = models.EmailField(blank=True, verbose_name='邮箱')
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="加入时间")
     update_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
