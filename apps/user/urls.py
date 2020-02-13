@@ -14,5 +14,6 @@ urlpatterns = [
     re_path(r'^(?P<uid>\d+)/clients/$', UserToClientView.as_view()),  # 用户客户端权限视图(维护用户客户端权限)
     re_path(r'^(?P<uid>\d+)/modules/$', UserToModuleView.as_view()),  # 用户模块权限视图(维护用户模块权限)
     re_path(r'^(?P<uid>\d+)/varieties/$', UserToVarietyView.as_view()),  # 用户品种权限视图(维护用户模块权限)
-
+    re_path(r'^(?P<uid>\d+)/avatar/$', views.UserAvatarView.as_view()),  # 用户头像修改
+    re_path(r'^(?P<uid>\d+)/psd/$', views.UserPasswordView.as_view()),  # 用户密码修改
 ]
