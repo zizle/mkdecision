@@ -162,6 +162,9 @@ STATICFILES_DIRS = [
     # "E:/mkDecision/",  # windows系统
     "/Users/zizle/Desktop/CODES/static/mkDecision/"  # Linux系统
 ]
+# 客户端更新文件
+# CLIENT_UPDATE_PATH = 'E:/mkDecision/UPDATE/'  # windows系统
+CLIENT_UPDATE_PATH = '/Users/zizle/Desktop/CODES/static/mkDecision/UPDATE/'  # Linux系统
 
 # 指定用户模型
 AUTH_USER_MODEL = 'user.User'
