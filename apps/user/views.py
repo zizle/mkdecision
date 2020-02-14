@@ -7,6 +7,8 @@ from django.db import transaction
 from django_redis import get_redis_connection
 from django.views.generic import View
 from django.http.response import HttpResponse
+from django.core.files.storage import default_storage
+from django.conf import settings
 from .models import User
 from .serializers import UserSerializer
 from basic.models import Client
@@ -307,6 +309,70 @@ class UserBaseInfoView(View):
             status_code = 400
         return HttpResponse(
             content=json.dumps({"message": message, "data": {}}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 用户头像视图
+class UserAvatarView(View):
+    def post(self, request, uid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user:
+                raise ValueError('登录已过期...')
+            phone = request_user.phone
+            image = request.FILES.get('image', None)
+            if not image:
+                raise ValueError('请上传图片.')
+            print(image)
+            save_path = settings.MEDIA_ROOT + 'userAvatar/phone_' + phone + '.png'
+            sql_path = settings.STATIC_URL + 'userAvatar/phone_' + phone + '.png'
+            if default_storage.exists(save_path):
+                default_storage.delete(save_path)
+            path = default_storage.save(save_path, image)
+            request_user.avatar = sql_path
+            request_user.save()
+            message = '修改成功.'
+            status_code = 201
+            data = sql_path
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = ''
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": data}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
+
+
+# 修改密码
+class UserPasswordView(View):
+    def post(self, request, uid):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client:
+                raise ValueError('INVALID CLIENT!')
+            request_body = json.loads(request.body)
+            psd = request_body.get('password', None)
+            if not psd:
+                raise ValueError('请设置密码')
+            request_user.set_password(psd)
+            request_user.save()
+            message = '修改密码成功。'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": []}),
             content_type="application/json; charset=utf-8",
             status=status_code
         )

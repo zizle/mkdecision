@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'rest_framework',  # 框架用于序列化
     'user.apps.UserConfig',  # 用户
     'basic.apps.BasicConfig',  # 基础信息
+    'updating.apps.UpdatingConfig',  # 版本更新
     'limit.apps.LimitConfig',  # 权限管理
     'home.apps.HomeConfig',  # 首页
     'info_service.apps.InfoServiceConfig',  # 产品服务
@@ -161,6 +162,9 @@ STATICFILES_DIRS = [
     # "E:/mkDecision/",  # windows系统
     "/Users/zizle/Desktop/CODES/static/mkDecision/"  # Linux系统
 ]
+# 客户端更新文件
+# CLIENT_UPDATE_PATH = 'E:/mkDecision/UPDATE/'  # windows系统
+CLIENT_UPDATE_PATH = '/Users/zizle/Desktop/CODES/static/mkDecision/UPDATE/'  # Linux系统
 
 # 指定用户模型
 AUTH_USER_MODEL = 'user.User'
