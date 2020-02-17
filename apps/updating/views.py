@@ -73,8 +73,12 @@ class CheckVersionView(View):
 # 下载文件
 class DownLoadClientFile(View):
     def get(self, request):
-        file = open('static/files/BatchPayTemplate.xls', 'rb')
-        response = FileResponse(file)
-        response['Content-Type'] = 'application/octet-stream'
-        response['Content-Disposition'] = 'attachment;filename="BatchPayTemplate.xls"'
-        return response
+        body_data = json.loads(request.body)
+        filename = body_data.get('filename', None)
+        file_path = os.path.join(settings.CLIENT_UPDATE_PATH, filename)
+        with open(file_path, 'rb') as file:
+            file = open(file_path, 'rb')
+            response = FileResponse(file)
+            response['Content-Type'] = 'application/octet-stream'
+            response['Content-Disposition'] = 'attachment;filename="BatchPayTemplate.xls"'
+            return response
