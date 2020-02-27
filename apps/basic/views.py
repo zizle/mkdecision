@@ -298,15 +298,20 @@ class ClientRetrieveView(View):
 # 系统开启时模块视图
 class ModuleStartView(View):
     def get(self, request):
-        machine_code = request.GET.get('mc', '')
+        print('请求系统模块')
+        machine_code = request.GET.get('mc', None)
         client = get_client(machine_code)
-        if not client:
-            all_modules = Module.objects.none()
-        else:
-            all_modules = Module.objects.filter(is_active=True).order_by('order')  # 获取系统模块
-        serializer = ModuleSerializer(instance=all_modules, many=True)
+        module_data = list()
+        if client:
+            all_modules = Module.objects.filter(is_active=True, parent=None).order_by('order')  # 获取系统模块
+            for module in all_modules:
+                module_serializer = ModuleSerializer(instance=module)
+                module_dict = module_serializer.data
+                subs_serializer = ModuleSerializer(instance=module.sub_modules.filter(is_active=True).order_by('order').all(), many=True)
+                module_dict['subs'] = subs_serializer.data
+                module_data.append(module_dict)
         return HttpResponse(
-            content=json.dumps({"message": '获取模块列表成功!', "data": serializer.data}),
+            content=json.dumps({"message": '获取模块列表成功!', "data": module_data}),
             content_type="application/json; charset=utf-8",
             status=200
         )
@@ -315,15 +320,20 @@ class ModuleStartView(View):
 # 系统模块视图
 class ModuleView(View):
     def get(self, request):
+        print('请求系统模块')
         machine_code = request.GET.get('mc', None)
         client = get_client(machine_code)
-        if not client or not client.is_manager:
-            all_modules = Module.objects.none()
-        else:
-            all_modules = Module.objects.all().order_by('order')  # 获取系统模块
-        serializer = ModuleSerializer(instance=all_modules, many=True)
+        module_data = list()
+        if client:
+            all_modules = Module.objects.filter(parent=None).order_by('order')  # 获取系统模块
+            for module in all_modules:
+                module_serializer = ModuleSerializer(instance=module)
+                module_dict = module_serializer.data
+                subs_serializer = ModuleSerializer(instance=module.sub_modules.order_by('order').all(), many=True)
+                module_dict['subs'] = subs_serializer.data
+                module_data.append(module_dict)
         return HttpResponse(
-            content=json.dumps({"message": '获取模块列表成功!', "data": serializer.data}),
+            content=json.dumps({"message": '获取模块列表成功!', "data": module_data}),
             content_type="application/json; charset=utf-8",
             status=200
         )
@@ -341,8 +351,10 @@ class ModuleView(View):
             name = body_data.get('name', None)
             if not name:
                 raise ValueError('请输入正确的名称.')
+            parent = body_data.get('parent', None)  # 父级
+            parent = int(parent) if parent else None
             # 创建
-            module = Module(name=name)
+            module = Module(name=name, parent_id=parent)
             module.save()
             data = {'id': module.id, 'name': module.name}
             message = '创建新模块成功!'

@@ -32,10 +32,11 @@ class ClientOpenRecord(BaseModel):
 """ 系统主功能模块相关 """
 
 
-# 系统主功能模块
+# 系统主功能模块以及子功能模块
 class Module(BaseModel):
     name = models.CharField(max_length=16, unique=True, verbose_name="名称")
-    order = models.IntegerField(default=0, verbose_name="排序")
+    parent = models.ForeignKey('self', related_name='sub_modules', null=True, blank=True, default=None, on_delete=models.CASCADE, verbose_name='父级')
+    order = models.IntegerField(default=0, auto_created=True, verbose_name="排序")
     is_active = models.BooleanField(default=True, verbose_name="启用")
 
     class Meta:

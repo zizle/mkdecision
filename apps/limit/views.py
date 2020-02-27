@@ -54,6 +54,8 @@ class ModuleAccessedView(View):
             try:
                 # 获取当前模块,先放行首页
                 request_module = Module.objects.get(id=int(mid))
+                if not request_module.is_active:
+                    raise ValueError('该功能已关闭...\n查看其他模块信息吧。')
                 if not request_module.name == u'首页':  # 不是首页模块才进行权限验证
                     if not user:
                         raise ValueError('您还没登录或登录已过期\n请先登录再进行操作!')
