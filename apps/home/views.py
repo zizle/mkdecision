@@ -615,6 +615,7 @@ class SpotCommodityView(View):
         try:
             if not client or not client.is_manager:
                 raise ValueError('INVALID CLIENT!')
+            print(request_user.is_collector)
             if not request_user or not request_user.is_collector:
                 raise ValueError('未登录或不能进行这项操作！')
             body_data = json.loads(request.body)
