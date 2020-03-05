@@ -5,5 +5,6 @@ from . import views
 
 urlpatterns = [
     path('questions/', views.QuestionsListView.as_view()),
-
+    path('answer/', views.CreateAnswerView.as_view()),
+    path('storehouses/', views.StorehouseView.as_view()),
 ]

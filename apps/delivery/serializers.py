@@ -35,6 +35,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         fields = ('id', 'questioner', 'content', 'read_count', 'create_time')
 
+
 class AnswerSerializer(serializers.ModelSerializer):
     answerer = CommunicationerSerializer()
     create_time = serializers.DateTimeField(format('%Y-%m-%d %H:%M:%S'), read_only=True)
@@ -42,3 +43,4 @@ class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
         fields = ('id', 'answerer', 'content', 'create_time')
+
