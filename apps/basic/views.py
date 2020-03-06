@@ -665,7 +665,7 @@ class ExchangeAndVarietyView(View):
             {"index": 1, "name": "郑州商品交易所", "en_code": "czce"},
             {"index": 2, "name": "上海期货交易所", "en_code": "shfe"},
             {"index": 3, "name": "大连商品交易所", "en_code": "dce"},
-            {"index": 4, "name": "中国金融期货交易所", "en_code": "cffex"},
+            #{"index": 4, "name": "中国金融期货交易所", "en_code": "cffex"},
             {"index": 5, "name": "上海能源交易中心", "en_code": "ine"},
         ]
         # 遍历交易所

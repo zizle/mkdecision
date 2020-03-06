@@ -2,7 +2,7 @@
 # Author: zizle
 from rest_framework import serializers
 
-from .models import ServiceGuide, Question, Answer
+from .models import ServiceGuide, Question, Answer, StoreHouse
 from user.models import User
 
 
@@ -43,4 +43,10 @@ class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
         fields = ('id', 'answerer', 'content', 'create_time')
+
+
+class StorehouseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoreHouse
+        fields = '__all__'
 

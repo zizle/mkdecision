@@ -4,6 +4,21 @@ from django.db import models
 from apps.abstract import BaseModel
 from basic.models import Variety
 
+""" 品种的基本信息 """
+
+
+# 品种基本信息模型
+class VarietyInformation(BaseModel):
+    variety = models.ForeignKey('basic.Variety', related_name='infos', on_delete=models.CASCADE, verbose_name="品种")
+    delivery_date = models.CharField(max_length=64, null=True, blank=True, verbose_name='最后交易日')
+    warrant_expire_date = models.CharField(max_length=512, null=True, blank=True, verbose_name='仓单有效期')
+    delivery_unit_min = models.CharField(max_length=64, null=True, blank=True, verbose_name='最小交割单位')
+
+    class Meta:
+        db_table = 'delivery_variety_info'
+        verbose_name = '品种基本信息'
+        verbose_name_plural = '品种基本信息'
+
 
 # 交易所的服务指引
 class ServiceGuide(BaseModel):
