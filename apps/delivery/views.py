@@ -236,8 +236,6 @@ class StorehouseView(View):
         except Exception as e:
             message = str(e)
             status_code = 400
-            import traceback
-            traceback.print_exc()
         return HttpResponse(
                 content=json.dumps({'message': message, 'data': {}}),
                 content_type='application/json; charset=utf-8',
@@ -270,7 +268,6 @@ class ProvinceStorehouseView(View):
                     response_data[variety.name] = list()
                 response_data[variety.name].append({"id": house.id, "name": house.name, "province": house.province})
         response_data['count'] = store_count
-        print(response_data)
         return HttpResponse(
             content=json.dumps({'message': "查询成功！", 'data': response_data}),
             content_type='application/json; charset=utf-8',
@@ -295,7 +292,6 @@ class VarietyStorehouseView(View):
             response_data["name"] = variety_obj.name
             response_data['name_en'] = variety_obj.name_en
             response_data['exchange'] = exchange_dict.get(variety_obj.exchange)
-            print(variety_obj.exchange)
             # base_info = variety_obj.varietybaseinfo_set.get(is_active=True, variety=variety_obj)  # 没有foreign_key的一方查询另一方.Model_set.all()
             information_obj = variety_obj.infos.first()
             if information_obj:
@@ -325,10 +321,7 @@ class VarietyStorehouseView(View):
             storehouse_data[province].append({"id": house.id, "name": house.name, "province": house.province})
         # storehouse_serializer = serializers.StorehouseNameSerializer(instance=storehouses, many=True)
         # variety_serializer = serializers.VarietySerializer(instance=variety_obj)
-
-
         response_data['storehouses'] = storehouse_data
-        print(response_data)
         return HttpResponse(
             content=json.dumps({'message': "查询仓库成功", 'data': response_data}),
             content_type='application/json; charset=utf-8',
