@@ -642,9 +642,11 @@ class VarietyRetrieveView(View):
             new_data = json.loads(request.body)
             operate_variety = Variety.objects.get(id=int(vid))
             for key, value in new_data.items():
-                if key in ['name', 'name_en', 'group_id']:
+                print(key, value)
+                if key in ['name', 'name_en', 'group_id', 'exchange']:
                     operate_variety.__setattr__(key, value)
             operate_variety.save()
+            print(operate_variety.exchange)
             message = '修改成功!'
             status_code = 200
         except Exception as e:
