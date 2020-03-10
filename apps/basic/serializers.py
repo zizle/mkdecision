@@ -49,7 +49,7 @@ class VarietySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Variety
-        fields = ('id', 'name', 'name_en', 'group')
+        fields = ('id', 'name', 'name_en', 'group', 'exchange')
 
 
 # 品种组序列化器

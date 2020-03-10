@@ -24,7 +24,7 @@ class NewsBulletinView(View):
         if not client:
             news = NewsBulletin.objects.none()
         else:
-            news = NewsBulletin.objects.order_by('-create_time').all()[:12]
+            news = NewsBulletin.objects.order_by('-create_time').all()[:30]  # 返回前30条
         serializer = NewsBulletinSerializer(instance=news, many=True)
         return HttpResponse(
             content=json.dumps({"message": '获取公告数据成功!', "data": serializer.data}),
@@ -615,6 +615,7 @@ class SpotCommodityView(View):
         try:
             if not client or not client.is_manager:
                 raise ValueError('INVALID CLIENT!')
+            print(request_user.is_collector)
             if not request_user or not request_user.is_collector:
                 raise ValueError('未登录或不能进行这项操作！')
             body_data = json.loads(request.body)

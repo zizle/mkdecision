@@ -7,13 +7,15 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 from django_redis import get_redis_connection
 from django.db import transaction, connection
-from django.db.models import Count
+from django.db.models import Count, Max
 from django.conf import settings
 from django.views.generic import View
 from django.http.response import HttpResponse
 from utils.client import get_client
 from .models import Client, Module, VarietyGroup, Variety, ClientOpenRecord, ModuleOpenRecord
-from .serializers import ClientSerializer, ModuleSerializer, VarietyGroupSerializer, VarietySerializer, ClientOpenRecordSerializer
+from .serializers import ClientSerializer, ModuleSerializer, VarietyGroupSerializer, VarietySerializer
+from delivery.models import ServiceGuide
+from delivery.serializers import ServiceGuideSerializer
 
 
 """ 客户端记录 """
@@ -298,15 +300,20 @@ class ClientRetrieveView(View):
 # 系统开启时模块视图
 class ModuleStartView(View):
     def get(self, request):
-        machine_code = request.GET.get('mc', '')
+        print('请求系统模块')
+        machine_code = request.GET.get('mc', None)
         client = get_client(machine_code)
-        if not client:
-            all_modules = Module.objects.none()
-        else:
-            all_modules = Module.objects.filter(is_active=True).order_by('order')  # 获取系统模块
-        serializer = ModuleSerializer(instance=all_modules, many=True)
+        module_data = list()
+        if client:
+            all_modules = Module.objects.filter(is_active=True, parent=None).order_by('order')  # 获取系统模块
+            for module in all_modules:
+                module_serializer = ModuleSerializer(instance=module)
+                module_dict = module_serializer.data
+                subs_serializer = ModuleSerializer(instance=module.sub_modules.filter(is_active=True).order_by('order').all(), many=True)
+                module_dict['subs'] = subs_serializer.data
+                module_data.append(module_dict)
         return HttpResponse(
-            content=json.dumps({"message": '获取模块列表成功!', "data": serializer.data}),
+            content=json.dumps({"message": '获取模块列表成功!', "data": module_data}),
             content_type="application/json; charset=utf-8",
             status=200
         )
@@ -315,15 +322,20 @@ class ModuleStartView(View):
 # 系统模块视图
 class ModuleView(View):
     def get(self, request):
+        # print('请求系统模块')
         machine_code = request.GET.get('mc', None)
         client = get_client(machine_code)
-        if not client or not client.is_manager:
-            all_modules = Module.objects.none()
-        else:
-            all_modules = Module.objects.all().order_by('order')  # 获取系统模块
-        serializer = ModuleSerializer(instance=all_modules, many=True)
+        module_data = list()
+        if client:
+            all_modules = Module.objects.filter(parent=None).order_by('order')  # 获取系统模块
+            for module in all_modules:
+                module_serializer = ModuleSerializer(instance=module)
+                module_dict = module_serializer.data
+                subs_serializer = ModuleSerializer(instance=module.sub_modules.order_by('order').all(), many=True)
+                module_dict['subs'] = subs_serializer.data
+                module_data.append(module_dict)
         return HttpResponse(
-            content=json.dumps({"message": '获取模块列表成功!', "data": serializer.data}),
+            content=json.dumps({"message": '获取模块列表成功!', "data": module_data}),
             content_type="application/json; charset=utf-8",
             status=200
         )
@@ -341,8 +353,14 @@ class ModuleView(View):
             name = body_data.get('name', None)
             if not name:
                 raise ValueError('请输入正确的名称.')
+            parent = body_data.get('parent', None)  # 父级
+            parent = int(parent) if parent else None
+            # 查找最大的order
+            max_order_dict = Module.objects.all().aggregate(Max('order'))
+            current_order = 0 if not max_order_dict['order__max'] else max_order_dict['order__max']
+            next_order = current_order + 1
             # 创建
-            module = Module(name=name)
+            module = Module(name=name, parent_id=parent, order=next_order)
             module.save()
             data = {'id': module.id, 'name': module.name}
             message = '创建新模块成功!'
@@ -357,6 +375,41 @@ class ModuleView(View):
             status=status_code
         )
 
+    def patch(self, request):
+        machine_code = request.GET.get('mc', None)
+        client = get_client(machine_code)
+        request_user = request.user
+        try:
+            if not client or not client.is_manager:
+                raise ValueError('INVALID CLIENT!')
+            if not request_user or not request_user.is_operator:
+                raise ValueError('还没登录或不能进行这个操作!')
+            body_data = json.loads(request.body)
+            current_id = body_data.get("current_id", None)
+            replace_id = body_data.get("replace_id", None)
+            print(current_id, replace_id)
+            if not current_id or not replace_id:
+                raise ValueError('参数错误.current_id, replace_id')
+            # 查询对应的模块
+            current_module = Module.objects.get(id=current_id)
+            replace_module = Module.objects.get(id=replace_id)
+            # 交换两个order
+            current_module.order, replace_module.order = replace_module.order, current_module.order
+            current_module.save()
+            replace_module.save()
+            serializer = ModuleSerializer(instance=[current_module, replace_module], many=True)
+            data = serializer.data
+            message = "移动成功."
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data = []
+        return HttpResponse(
+            content=json.dumps({"message": message, "data": data}),
+            content_type="application/json; charset=utf-8",
+            status=status_code
+        )
 
 # 单个模块基础信息视图
 class ModuleRetrieveView(View):
@@ -496,13 +549,15 @@ class GroupRetrieveVarietiesView(View):
             body_data = json.loads(request.body)
             name = body_data.get('name', None)
             name_en = body_data.get('name_en', None)
+            exchange_lib = body_data.get('exchange_lib', 0)
             if not all([gid, name, name_en]):
                 raise ValueError('缺少【名称】或【英文代码】')
             # 创建新品种
             new_variety = Variety(
                 group_id=int(gid),
                 name=name,
-                name_en=name_en
+                name_en=name_en,
+                exchange=exchange_lib
             )
             new_variety.save()
             message = '新建品种成功！'
@@ -587,9 +642,11 @@ class VarietyRetrieveView(View):
             new_data = json.loads(request.body)
             operate_variety = Variety.objects.get(id=int(vid))
             for key, value in new_data.items():
-                if key in ['name', 'name_en', 'group_id']:
+                print(key, value)
+                if key in ['name', 'name_en', 'group_id', 'exchange']:
                     operate_variety.__setattr__(key, value)
             operate_variety.save()
+            print(operate_variety.exchange)
             message = '修改成功!'
             status_code = 200
         except Exception as e:
@@ -600,3 +657,35 @@ class VarietyRetrieveView(View):
             content_type="application/json; charset=utf-8",
             status=status_code
         )
+
+
+# 获取交易所及其下的所有品种
+class ExchangeAndVarietyView(View):
+    def get(self, request):
+        # 准备交易所的英文代号,对应Variety.EXCHANGES
+        exchanges = [
+            {"index": 1, "name": "郑州商品交易所", "en_code": "czce"},
+            {"index": 2, "name": "上海期货交易所", "en_code": "shfe"},
+            {"index": 3, "name": "大连商品交易所", "en_code": "dce"},
+            #{"index": 4, "name": "中国金融期货交易所", "en_code": "cffex"},
+            {"index": 5, "name": "上海能源交易中心", "en_code": "ine"},
+        ]
+        # 遍历交易所
+        response_data = list()
+        for exchange_item in exchanges:
+            exchange_data = dict()
+            exchange_data["name"] = exchange_item["name"]
+            exchange_data["en_code"] = exchange_item["en_code"]
+            varieties = Variety.objects.filter(exchange=exchange_item['index'])
+            varieties_serializer = VarietySerializer(instance=varieties, many=True)
+            exchange_data["varieties"] = varieties_serializer.data
+            service_guides = ServiceGuide.objects.filter(exchange=exchange_item['index'])
+            service_guide_serializer = ServiceGuideSerializer(instance=service_guides, many=True)
+            exchange_data['service_guides'] = service_guide_serializer.data
+            response_data.append(exchange_data)
+        return HttpResponse(
+            content=json.dumps({"message": "获取成功", "data": response_data}),
+            content_type="application/json; charset=utf-8",
+            status=200
+        )
+

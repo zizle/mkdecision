@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',  # 验证模块
     'django.contrib.contenttypes',  # 验证模块的依赖模块
     'django.contrib.staticfiles',  # 静态文件
+    'corsheaders',
     'rest_framework',  # 框架用于序列化
     'user.apps.UserConfig',  # 用户
     'basic.apps.BasicConfig',  # 基础信息
@@ -31,6 +32,7 @@ INSTALLED_APPS = [
     'home.apps.HomeConfig',  # 首页
     'info_service.apps.InfoServiceConfig',  # 产品服务
     'trend.apps.TrendConfig',  # 数据分析
+    'delivery.apps.DeliveryConfig',  # 交割服务
 ]
 """
 中间件功能介绍
@@ -45,7 +47,7 @@ SecurityMiddleware：
 """
 # from django.contrib.auth.middleware import AuthenticationMiddleware
 MIDDLEWARE = [
-
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     # 'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',  # 文档强烈建议安装此中间件
@@ -172,3 +174,6 @@ AUTH_USER_MODEL = 'user.User'
 DEFAULT_EXPIRE_DATE = datetime.datetime.strptime('3000-01-01', '%Y-%m-%d')
 # 图片验证码有效时间2分钟
 IMAGE_CODE_REDIS_EXPIRES = 120
+
+# 跨域访问
+CORS_ORIGIN_ALLOW_ALL = True

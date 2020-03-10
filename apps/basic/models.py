@@ -3,6 +3,8 @@
 from django.db import models
 from apps.abstract import BaseModel
 
+
+
 """ 客户端相关 """
 
 
@@ -32,9 +34,10 @@ class ClientOpenRecord(BaseModel):
 """ 系统主功能模块相关 """
 
 
-# 系统主功能模块
+# 系统主功能模块以及子功能模块
 class Module(BaseModel):
     name = models.CharField(max_length=16, unique=True, verbose_name="名称")
+    parent = models.ForeignKey('self', related_name='sub_modules', null=True, blank=True, default=None, on_delete=models.CASCADE, verbose_name='父级')
     order = models.IntegerField(default=0, verbose_name="排序")
     is_active = models.BooleanField(default=True, verbose_name="启用")
 
@@ -71,9 +74,17 @@ class VarietyGroup(BaseModel):
 
 # 品种模型
 class Variety(BaseModel):
+    EXCHANGES = (
+        (1, '郑州商品交易所'),
+        (2, '上海期货交易所'),
+        (3, '大连商品交易所'),
+        (4, '中国金融期货交易所'),
+        (5, '上海国际能源交易中心'),
+    )
     group = models.ForeignKey('VarietyGroup', related_name='varieties', on_delete=models.CASCADE, verbose_name='所属组')
     name = models.CharField(max_length=16, verbose_name='名称')
     name_en = models.CharField(max_length=32, verbose_name='名称')
+    exchange = models.SmallIntegerField(choices=EXCHANGES, default=0, verbose_name='交易所')
 
     class Meta:
         db_table = 'basic_variety'

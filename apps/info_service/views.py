@@ -659,6 +659,7 @@ class SMSLinkView(View):
             min_date = datetime.datetime.strptime(min_date, '%Y-%m-%d')
             print(min_date)
             messages = MessageLink.objects.filter(date__gte=min_date.date()).order_by('-date', '-time')
+        # 做分页
         serializer = MessageLinkSerializer(instance=messages, many=True)
         return HttpResponse(
             content=json.dumps({'message': '获取短信通成功!', 'data': serializer.data}),

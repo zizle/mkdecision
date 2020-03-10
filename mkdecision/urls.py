@@ -23,5 +23,6 @@ urlpatterns = [
     path('limit/', include('limit.urls')),
     path('home/', include('home.urls')),
     path('info/', include('info_service.urls')),
-    path('trend/', include('trend.urls'))
+    path('trend/', include('trend.urls')),
+    path('delivery/', include('delivery.urls'))
 ]
