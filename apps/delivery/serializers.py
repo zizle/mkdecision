@@ -2,17 +2,12 @@
 # Author: zizle
 from rest_framework import serializers
 
-from .models import ServiceGuide, Question, Answer, StoreHouse
+from .models import Question, Answer, StoreHouse
 from user.models import User
 
 
-class ServiceGuideSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ServiceGuide
-        fields = '__all__'
-
-
 """ 讨论交流 """
+
 
 # 提问者和回答者序列化器
 class CommunicationerSerializer(serializers.ModelSerializer):

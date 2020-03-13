@@ -645,6 +645,7 @@ class SMSLinkView(View):
     def get(self, request):
         machine_code = request.GET.get('mc', None)
         min_date = request.GET.get('min_date', None)
+        current_page = request.GET.get('current_page', 1)
         client = get_client(machine_code)
         if not client:
             return HttpResponse(
@@ -657,14 +658,27 @@ class SMSLinkView(View):
             messages = MessageLink.objects.all().order_by('-date', '-time')
         else:
             min_date = datetime.datetime.strptime(min_date, '%Y-%m-%d')
-            print(min_date)
+            # print(min_date)
             messages = MessageLink.objects.filter(date__gte=min_date.date()).order_by('-date', '-time')
-        # 做分页
-        serializer = MessageLinkSerializer(instance=messages, many=True)
+        # 分页
+        paginator = Paginator(object_list=messages, per_page=2)
+        try:
+            page_list = paginator.get_page(current_page)
+            serializer = MessageLinkSerializer(instance=page_list, many=True)
+            data = dict()
+            data['contacts'] = serializer.data
+            data['total_page'] = paginator.num_pages
+            message = '获取短信通成功!'
+            status_code = 200
+        except Exception as e:
+            message = str(e)
+            status_code = 400
+            data={}
+        # serializer = MessageLinkSerializer(instance=messages, many=True)
         return HttpResponse(
-            content=json.dumps({'message': '获取短信通成功!', 'data': serializer.data}),
+            content=json.dumps({'message': message, 'data': data}),
             content_type='application/json charset=utf-8',
-            status=200
+            status=status_code
         )
 
     def post(self, request):

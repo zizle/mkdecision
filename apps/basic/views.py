@@ -14,8 +14,6 @@ from django.http.response import HttpResponse
 from utils.client import get_client
 from .models import Client, Module, VarietyGroup, Variety, ClientOpenRecord, ModuleOpenRecord
 from .serializers import ClientSerializer, ModuleSerializer, VarietyGroupSerializer, VarietySerializer
-from delivery.models import ServiceGuide
-from delivery.serializers import ServiceGuideSerializer
 
 
 """ 客户端记录 """
@@ -643,10 +641,10 @@ class VarietyRetrieveView(View):
             operate_variety = Variety.objects.get(id=int(vid))
             for key, value in new_data.items():
                 print(key, value)
-                if key in ['name', 'name_en', 'group_id', 'exchange']:
+                if key in ['name', 'name_en', 'group_id', 'exchange', 'is_active']:
                     operate_variety.__setattr__(key, value)
             operate_variety.save()
-            print(operate_variety.exchange)
+            # print(operate_variety.exchange)
             message = '修改成功!'
             status_code = 200
         except Exception as e:
@@ -676,12 +674,9 @@ class ExchangeAndVarietyView(View):
             exchange_data = dict()
             exchange_data["name"] = exchange_item["name"]
             exchange_data["en_code"] = exchange_item["en_code"]
-            varieties = Variety.objects.filter(exchange=exchange_item['index'])
+            varieties = Variety.objects.filter(exchange=exchange_item['index'], is_active=True)
             varieties_serializer = VarietySerializer(instance=varieties, many=True)
             exchange_data["varieties"] = varieties_serializer.data
-            service_guides = ServiceGuide.objects.filter(exchange=exchange_item['index'])
-            service_guide_serializer = ServiceGuideSerializer(instance=service_guides, many=True)
-            exchange_data['service_guides'] = service_guide_serializer.data
             response_data.append(exchange_data)
         return HttpResponse(
             content=json.dumps({"message": "获取成功", "data": response_data}),

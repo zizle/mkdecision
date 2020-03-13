@@ -20,18 +20,6 @@ class VarietyInformation(BaseModel):
         verbose_name_plural = '品种基本信息'
 
 
-# 交易所的服务指引
-class ServiceGuide(BaseModel):
-
-    name = models.CharField(max_length=32, verbose_name='名称')
-    en_code = models.CharField(max_length=32, verbose_name='英文代称')
-    exchange = models.SmallIntegerField(choices=Variety.EXCHANGES, default=0, verbose_name='从属于')
-
-    class Meta:
-        db_table = 'delivery_service_guide'
-        verbose_name = '服务指引'
-        verbose_name_plural = '服务指引'
-
 
 """ 交流与讨论 """
 

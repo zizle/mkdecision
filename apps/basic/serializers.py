@@ -46,10 +46,14 @@ class ModuleSerializer(serializers.ModelSerializer):
 # 品种序列化器
 class VarietySerializer(serializers.ModelSerializer):
     group = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    is_active = serializers.SerializerMethodField()
 
     class Meta:
         model = Variety
-        fields = ('id', 'name', 'name_en', 'group', 'exchange')
+        fields = ('id', 'name', 'name_en', 'group', 'exchange', 'is_active')
+
+    def get_is_active(self, obj):
+        return 1 if obj.is_active else 0
 
 
 # 品种组序列化器

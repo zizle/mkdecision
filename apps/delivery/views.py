@@ -203,7 +203,7 @@ class StorehouseView(View):
                     # print(house_item['name'], house_item['varieties_en'], house_item['province_en'])
                     variety_list = Variety.objects.filter(name_en__in=house_item['varieties_en'])
                     if not variety_list:
-                        msg = house_item["name"] + "关联品种错误."
+                        msg = house_item["name"] + "关联品种错误." + str(house_item['varieties_en'])
                         raise ValueError(msg)
                     # for variety_en in house_item['varieties_en']:
                     #     variety_list.append(Variety.objects.get(en_code=variety_en))

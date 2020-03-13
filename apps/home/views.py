@@ -274,7 +274,7 @@ class AdvertiseWithNameView(View):
                 status=400
             )
         image = 'home/advertisement/image/' + name
-        print(image)
+        # print(image)
         try:
             ad = Advertisement.objects.get(image=image)
             print(ad)
@@ -357,13 +357,13 @@ class NormalReportView(View):
             if not client:
                 raise ValueError('INVALID CLIENT!')
             body_data = json.loads(request.body)
-            category = int(body_data.get('category'))
+            category = body_data.get('category')
             params = dict()
-            if category == 0:
+            if category == 0:  # 获取全部
                 pass
-            elif category == -1:
+            elif category == -1:  # 获取其他
                 params['category'] = None
-            else:
+            else:  # 根据分类条件获取
                 params['category_id'] = category
             # 查询
             variety = int(body_data.get('variety'))
