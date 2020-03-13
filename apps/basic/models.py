@@ -85,6 +85,7 @@ class Variety(BaseModel):
     name = models.CharField(max_length=16, verbose_name='名称')
     name_en = models.CharField(max_length=32, verbose_name='名称')
     exchange = models.SmallIntegerField(choices=EXCHANGES, default=0, verbose_name='交易所')
+    is_active = models.BooleanField(default=True, verbose_name='有效')
 
     class Meta:
         db_table = 'basic_variety'

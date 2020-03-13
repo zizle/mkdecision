@@ -152,20 +152,20 @@ USE_L10N = True  # 是否启用数据本地化格式。使用当前语言环境�
 USE_TZ = False
 
 # json web token有效时间(单位/秒)
-JSON_WEB_TOKEN_EXPIRE = 7200
+JSON_WEB_TOKEN_EXPIRE = 1296000
 
 # 系统文件存储的根路径,模型中使用upload_to的路径相对于本路径下
-# MEDIA_ROOT = 'E:/mkDecision/'  # windows系统
+# MEDIA_ROOT = 'F:/mkDecision/'  # windows系统
 MEDIA_ROOT = '/Users/zizle/Desktop/CODES/static/mkDecision/'  # Linux系统
 
 # 静态文件
 STATIC_URL = "/mkDecision/"
 STATICFILES_DIRS = [
-    # "E:/mkDecision/",  # windows系统
+    # "F:/mkDecision/",  # windows系统
     "/Users/zizle/Desktop/CODES/static/mkDecision/"  # Linux系统
 ]
 # 客户端更新文件
-# CLIENT_UPDATE_PATH = 'E:/mkDecision/UPDATE/'  # windows系统
+# CLIENT_UPDATE_PATH = 'F:/mkDecision/UPDATE/'  # windows系统
 CLIENT_UPDATE_PATH = '/Users/zizle/Desktop/CODES/static/mkDecision/UPDATE/'  # Linux系统
 
 # 指定用户模型
