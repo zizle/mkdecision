@@ -1,0 +1,9 @@
+cffi==1.13.2
+Django==2.1
+django-redis==4.11.0
+djangorestframework==3.10.3
+Pillow==7.0.0
+PyJWT==1.7.1
+PyMySQL==0.9.3
+pytz==2019.3
+redis==3.3.11
