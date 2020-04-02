@@ -23,7 +23,7 @@ class AuthenticatedUserMiddleware(MiddlewareMixin):
             except User.DoesNotExist:
                 user = None
             except Exception as e:
-                print(e)
+                print("用户token验证失败:", e)
                 # jwt验证失败就会抛出相应错误
                 user = None
         # request对象绑定user
